@@ -40,7 +40,6 @@
                     },
                     backgroundImage: {
                         'gold-gradient': 'linear-gradient(135deg, #D4AF37 0%, #F3E095 50%, #B8870B 100%)',
-                        'gold-shine': 'linear-gradient(135deg, #1A1A1A 0%, #252525 50%, #1A1A1A 100%)',
                         'radial-glow': 'radial-gradient(circle at 50% 0%, rgba(212, 175, 55, 0.15) 0%, transparent 70%)',
                     },
                     boxShadow: {
@@ -51,16 +50,21 @@
                     animation: {
                         'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                         'shimmer': 'shimmer 3s linear infinite',
-                        'float': 'float 6s ease-in-out infinite',
+                        'fade-in': 'fadeIn 0.5s ease-out',
+                        'slide-up': 'slideUp 0.5s ease-out',
                     },
                     keyframes: {
                         shimmer: {
                             '0%': { backgroundPosition: '-200% 0' },
                             '100%': { backgroundPosition: '200% 0' },
                         },
-                        float: {
-                            '0%, 100%': { transform: 'translateY(0px)' },
-                            '50%': { transform: 'translateY(-10px)' },
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { opacity: '0', transform: 'translateY(20px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
                         }
                     }
                 }
@@ -78,9 +82,6 @@
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
-        .border-gold-gradient {
-            border-image: linear-gradient(135deg, #D4AF37, #F3E095, #B8870B) 1;
-        }
         .glass-panel {
             background: rgba(26, 26, 26, 0.7);
             backdrop-filter: blur(20px);
@@ -91,29 +92,20 @@
             border-color: rgba(212, 175, 55, 0.3);
             box-shadow: 0 10px 40px rgba(212, 175, 55, 0.1);
         }
-        .shimmer-transparent {
-            background: linear-gradient(
-                90deg,
-                rgba(212, 175, 55, 0) 0%,
-                rgba(212, 175, 55, 0.1) 50%,
-                rgba(212, 175, 55, 0) 100%
-            );
-            background-size: 200% 100%;
-            animation: shimmer 3s infinite;
-        }
         .card-hover-transform {
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .card-hover-transform:hover {
             transform: translateY(-5px);
         }
-        .loading-skeleton {
-            background: linear-gradient(90deg, rgba(212, 175, 55, 0.05) 25%, rgba(212, 175, 55, 0.1) 50%, rgba(212, 175, 55, 0.05) 75%);
-            background-size: 200% 100%;
-            animation: shimmer 2s infinite;
-        }
+        .article-content h3 { color: #D4AF37; margin-top: 1.5em; margin-bottom: 0.5em; font-size: 1.25em; }
+        .article-content p { margin-bottom: 1em; line-height: 1.8; color: #E5E5E5; }
+        .article-content ul { list-style-type: disc; padding-left: 1.5em; margin-bottom: 1em; color: #E5E5E5; }
+        .article-content li { margin-bottom: 0.5em; }
+        .article-content strong { color: #F3E095; font-weight: 600; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
-<base target="_blank">
 </head>
 <body class="font-sans min-h-screen bg-obsidian-500 antialiased selection:bg-gold-500 selection:text-black overflow-x-hidden">
 
@@ -129,14 +121,14 @@
     <div class="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
 
         <!-- 头部区域 -->
-        <header class="text-center mb-16 relative">
+        <header class="text-center mb-16 relative cursor-pointer" onclick="showHome()">
             <div class="flex items-center justify-center gap-3 mb-4">
                 <div class="h-px w-12 bg-gradient-to-r from-transparent to-gold-600"></div>
                 <span class="text-gold-500 text-xs tracking-[0.3em] uppercase font-medium">Premium Intelligence</span>
                 <div class="h-px w-12 bg-gradient-to-l from-transparent to-gold-600"></div>
             </div>
             
-            <h1 class="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 tracking-tight">
+            <h1 class="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 tracking-tight hover:opacity-80 transition-opacity">
                 <span class="text-gold-gradient">大头的 AI 深度内参</span>
             </h1>
             
@@ -154,57 +146,133 @@
             </div>
         </header>
 
-        <!-- 核心摘要区域 -->
-        <section class="relative mb-16 group">
-            <div class="absolute -inset-0.5 bg-gradient-to-r from-gold-600 via-gold-300 to-gold-600 rounded-2xl opacity-30 group-hover:opacity-50 transition duration-500 blur-sm"></div>
-            
-            <div class="relative glass-panel rounded-2xl p-1 overflow-hidden">
-                <div class="absolute top-0 left-0 w-full h-1 bg-gold-gradient opacity-80"></div>
+        <!-- 首页内容 -->
+        <div id="home-view">
+            <!-- 核心摘要区域 -->
+            <section class="relative mb-16 group">
+                <div class="absolute -inset-0.5 bg-gradient-to-r from-gold-600 via-gold-300 to-gold-600 rounded-2xl opacity-30 group-hover:opacity-50 transition duration-500 blur-sm"></div>
                 
-                <div class="bg-gradient-to-b from-obsidian-200/60 to-obsidian-400/30 rounded-xl p-6 sm:p-10">
-                    <div class="flex items-center gap-3 mb-6">
-                        <div class="p-2 bg-gold-500/10 rounded-lg border border-gold-500/20">
-                            <svg class="w-6 h-6 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                <div class="relative glass-panel rounded-2xl p-1 overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-1 bg-gold-gradient opacity-80"></div>
+                    
+                    <div class="bg-gradient-to-b from-obsidian-200/60 to-obsidian-400/30 rounded-xl p-6 sm:p-10">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="p-2 bg-gold-500/10 rounded-lg border border-gold-500/20">
+                                <svg class="w-6 h-6 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                                </svg>
+                            </div>
+                            <h2 class="font-serif text-xl sm:text-2xl text-gold-100 font-semibold tracking-wide">今日核心摘要</h2>
+                            <div class="ml-auto">
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gold-500/10 text-gold-400 border border-gold-500/20">
+                                    TOP 3
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4" id="summary-container">
+                            <div class="animate-pulse space-y-4">
+                                <div class="h-20 bg-gold-500/5 rounded-lg"></div>
+                                <div class="h-20 bg-gold-500/5 rounded-lg"></div>
+                                <div class="h-20 bg-gold-500/5 rounded-lg"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 分类列表 -->
+            <section class="mb-16">
+                <div class="flex items-center justify-between mb-8">
+                    <div class="flex items-center gap-3">
+                        <div class="w-1 h-8 bg-gold-gradient rounded-full"></div>
+                        <h2 class="font-serif text-2xl text-gold-50 font-semibold">深度分类</h2>
+                    </div>
+                    <div class="text-xs text-gray-500 font-mono tracking-wider">CATEGORIES</div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="categories-container">
+                    <!-- 动态生成分类卡片 -->
+                </div>
+            </section>
+        </div>
+
+        <!-- 文章列表页（默认隐藏） -->
+        <div id="category-view" class="hidden animate-fade-in">
+            <div class="mb-6 flex items-center gap-4">
+                <button onclick="showHome()" class="flex items-center gap-2 px-4 py-2 glass-panel rounded-lg text-gold-400 hover:text-gold-300 hover:border-gold-500/30 transition-all group">
+                    <svg class="w-5 h-5 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                    </svg>
+                    <span class="text-sm">返回首页</span>
+                </button>
+                <div class="h-px flex-1 bg-gradient-to-r from-gold-500/20 to-transparent"></div>
+            </div>
+
+            <div class="glass-panel rounded-2xl p-8 mb-8 border-gold-500/20">
+                <div class="flex items-center gap-4 mb-2">
+                    <div id="category-icon" class="p-3 bg-gold-500/10 rounded-lg border border-gold-500/20">
+                        <!-- 动态图标 -->
+                    </div>
+                    <div>
+                        <h2 id="category-title" class="font-serif text-3xl text-gold-100 font-bold"></h2>
+                        <p id="category-desc" class="text-gray-400 text-sm mt-1"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-4" id="articles-list">
+                <!-- 动态生成文章列表 -->
+            </div>
+        </div>
+
+        <!-- 文章详情页（默认隐藏） -->
+        <div id="article-view" class="hidden animate-fade-in">
+            <div class="mb-6 flex items-center gap-4">
+                <button onclick="showCategory()" class="flex items-center gap-2 px-4 py-2 glass-panel rounded-lg text-gold-400 hover:text-gold-300 hover:border-gold-500/30 transition-all group">
+                    <svg class="w-5 h-5 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                    </svg>
+                    <span class="text-sm">返回列表</span>
+                </button>
+                <div class="h-px flex-1 bg-gradient-to-r from-gold-500/20 to-transparent"></div>
+            </div>
+
+            <article class="glass-panel rounded-2xl p-8 sm:p-12 border-gold-500/10">
+                <div class="border-b border-white/5 pb-8 mb-8">
+                    <div class="flex items-center gap-3 mb-4">
+                        <span id="article-category" class="px-3 py-1 rounded-full text-xs font-medium bg-gold-500/10 text-gold-400 border border-gold-500/20"></span>
+                        <span id="article-time" class="text-xs text-gray-500 font-mono"></span>
+                    </div>
+                    <h1 id="article-title" class="font-serif text-2xl sm:text-4xl text-gold-100 font-bold leading-tight mb-4"></h1>
+                    <div class="flex items-center gap-4 text-xs text-gray-400">
+                        <span class="flex items-center gap-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
-                        </div>
-                        <h2 class="font-serif text-xl sm:text-2xl text-gold-100 font-semibold tracking-wide">今日核心摘要</h2>
-                        <div class="ml-auto">
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gold-500/10 text-gold-400 border border-gold-500/20">
-                                TOP 3
-                            </span>
-                        </div>
-                    </div>
-
-                    <div class="space-y-4" id="summary-container">
-                        <!-- 动态生成的核心摘要将插入这里 -->
-                        <div class="animate-pulse space-y-4">
-                            <div class="h-20 bg-gold-500/5 rounded-lg"></div>
-                            <div class="h-20 bg-gold-500/5 rounded-lg"></div>
-                            <div class="h-20 bg-gold-500/5 rounded-lg"></div>
-                        </div>
+                            <span id="article-readtime"></span>
+                        </span>
+                        <span>深度内参编辑部</span>
                     </div>
                 </div>
-            </div>
-        </section>
-
-        <!-- 分类列表 -->
-        <section class="mb-16">
-            <div class="flex items-center justify-between mb-8">
-                <div class="flex items-center gap-3">
-                    <div class="w-1 h-8 bg-gold-gradient rounded-full"></div>
-                    <h2 class="font-serif text-2xl text-gold-50 font-semibold">深度分类</h2>
+                
+                <div id="article-content" class="article-content prose prose-invert max-w-none font-light text-gray-200 leading-relaxed">
+                    <!-- 动态生成文章内容 -->
                 </div>
-                <div class="text-xs text-gray-500 font-mono tracking-wider">CATEGORIES</div>
-            </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="categories-container">
-                <!-- 动态生成的分类卡片将插入这里 -->
-            </div>
-        </section>
+                <div class="mt-12 pt-8 border-t border-white/5 flex justify-between items-center">
+                    <div class="text-xs text-gray-500">
+                        本文内容基于公开信息整理，仅供行业交流参考
+                    </div>
+                    <button onclick="showHome()" class="text-xs text-gold-500 hover:text-gold-400 transition-colors">
+                        回到首页 →
+                    </button>
+                </div>
+            </article>
+        </div>
 
         <!-- 订阅/更新提示 -->
-        <section class="relative rounded-2xl overflow-hidden mb-16">
+        <section class="relative rounded-2xl overflow-hidden mb-16 mt-16" id="subscribe-section">
             <div class="absolute inset-0 bg-gradient-to-r from-gold-900/20 via-obsidian-200 to-gold-900/20"></div>
             <div class="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=&quot;60&quot; height=&quot;60&quot; viewBox=&quot;0 0 60 60&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;%3E%3Cg fill=&quot;none&quot; fill-rule=&quot;evenodd&quot;%3E%3Cg fill=&quot;%23D4AF37&quot; fill-opacity=&quot;0.03&quot;%3E%3Cpath d=&quot;M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z&quot;/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-30"></div>
             
@@ -228,7 +296,6 @@
     <footer class="relative z-10 border-t border-white/5 bg-obsidian-600/50 backdrop-blur-sm mt-12">
         <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-                
                 <div class="flex items-center gap-3">
                     <div class="w-8 h-8 bg-gradient-to-br from-gold-400 to-gold-600 rounded flex items-center justify-center shadow-gold-sm">
                         <span class="text-obsidian-500 font-serif font-bold text-lg">头</span>
@@ -238,7 +305,6 @@
                         <div class="text-[10px] text-gray-600 uppercase tracking-widest">Autonomous Intelligence</div>
                     </div>
                 </div>
-
                 <div class="text-center sm:text-right">
                     <p class="text-xs text-gray-500 font-light tracking-wide">
                         本页面由 <span class="text-gold-500/80 font-medium">Agent Swarm</span> 自动驱动
@@ -250,9 +316,7 @@
                         <span class="hidden sm:inline text-gray-600">UTC+8</span>
                     </p>
                 </div>
-
             </div>
-            
             <div class="mt-6 pt-6 border-t border-white/5 text-center">
                 <p class="text-[10px] text-gray-600 font-light">
                     © 2026 大头的 AI 深度内参. 保留所有权利. 信息仅供决策参考，不构成投资建议.
@@ -296,7 +360,9 @@
                     "OpenAI 董事会批准公司架构重组为营利性公益公司，为 IPO 铺路，Sam Altman 持股比例曝光约 9%，员工股票回购计划同步启动。"
                 ],
                 [
-                    "Stable Diffusion 3 官方版开源发布，采用全新 DiT 架构，文字渲染能力达到商用级别，Adobe 宣布将在 Photoshop 中集成该模型。"
+                    "Stable Diffusion 3 官方版开源发布，采用全新 DiT 架构，文字渲染能力达到商用级别，Adobe 宣布将在 Photoshop 中集成该模型。",
+                    "物理智能公司 Figure AI 宣布与宝马制造工厂达成合作，部署人形机器人执行精密装配任务，开创了 AI 机器人在汽车产线商用的先例。",
+                    "中国大模型备案清单新增 42 款产品，生成式 AI 服务用户数突破 2 亿大关，C 端应用付费转化率环比增长 15%。"
                 ]
             ],
             
@@ -305,113 +371,169 @@
                     title: "大模型",
                     desc: "GPT-5、Claude 4、Gemini Ultra 等前沿大模型技术突破与商业化进展追踪",
                     icon: "M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z",
-                    news: [
-                        "GPT-5 API 正式开放企业接入",
-                        "Claude 3.5 代码能力评测登顶",
-                        "Gemini 推出视频生成功能",
-                        "Llama 4 训练成本首次披露",
-                        "文心一言 5.0 发布会定档",
-                        "通义千问开源 100B 参数版本",
-                        "月之暗面 Kimi 实现 200 万字上下文",
-                        "零一万物发布 MoE 架构新模型"
+                    articles: [
+                        {
+                            title: "GPT-5 预览版技术解析：多模态推理的质变与边界突破",
+                            summary: "OpenAI 在最新技术博客中披露了 GPT-5 的架构细节，采用 Mixture of Experts (MoE) 架构，总参数量达 1.8T，但每次推理仅激活 280B 参数。",
+                            content: "<p>OpenAI 今日正式向部分企业用户开放了 GPT-5 的 API 预览权限。根据官方技术白皮书，GPT-5 采用了全新的<strong>多模态原生架构</strong>，不再是通过独立的视觉编码器处理图像，而是将文本、图像、音频和视频 token 统一在同一表示空间内处理。</p><h3>关键技术指标</h3><p>在 MMMU（大规模多模态理解）基准测试中，GPT-5 取得了 78.2% 的成绩，较 GPT-4 Turbo 的 63.4% 有显著提升。特别值得注意的是，模型在<strong>跨模态推理</strong>任务上表现尤为突出，能够基于一张建筑图纸和一段语音描述，生成符合物理约束的 3D 结构分析。</p><h3>企业级优化</h3><p>API 延迟方面，通过引入 speculative decoding（推测解码）技术，首 token 返回时间（TTFT）降低了 40%，这对于实时客服场景至关重要。定价策略上，输入 tokens 定价为 $5/百万，输出 tokens 为 $15/百万，与 GPT-4 Turbo 持平但性能大幅提升。</p><h3>竞争格局影响</h3><p>业内人士分析，GPT-5 的发布将迫使 Google 加快 Gemini Ultra 的迭代节奏，同时给 Anthropic 的 Claude 3.5 带来巨大压力。预计下半年大模型 API 价格将再次出现断崖式下跌。</p>",
+                            readTime: "6 分钟"
+                        },
+                        {
+                            title: "Claude 3.5 Sonnet 代码能力深度评测：超越 GPT-4 的编程助手",
+                            summary: "最新 HumanEval 测试显示，Claude 3.5 在 Python、JavaScript 和 Rust 三种语言的代码生成任务上全面领先。",
+                            content: "<p>Anthropic 上月发布的 Claude 3.5 Sonnet 在开发者社区引发热议。在 SWE-bench（真实软件工程问题测试集）上，该模型解决了 46.2% 的问题，而 GPT-4 仅为 31.4%。</p><h3>架构创新</h3><p>Claude 3.5 采用了改进版的 Constitutional AI（宪法 AI）训练方法，强调<strong>有用性、无害性和诚实性</strong>的三重平衡。特别值得注意的是，模型在拒绝回答有害问题的同时，保持了极高的 helpfulness 评分。</p><p>代码能力方面，模型不仅能生成正确的代码，还能主动识别潜在的安全漏洞。在测试集中，Claude 3.5 主动标记了 23% 的代码片段存在 SQL 注入或缓冲区溢出风险。</p><h3>Artifacts 功能革命</h3><p>配合 Claude.ai 网页版推出的 Artifacts 功能，允许用户实时预览和编辑模型生成的代码结果。这种交互模式被认为重新定义了人机协作编程的范式。</p>",
+                            readTime: "5 分钟"
+                        },
+                        {
+                            title: "开源力量：Llama 4 与 GPT-4 的性能对比分析",
+                            summary: "Meta 的最新开源模型在多个基准测试上逼近闭源商业模型，企业级部署成本仅为 GPT-4 API 的 1/10。",
+                            content: "<p>Meta 的 Llama 4 系列模型采用了 128K 的上下文窗口，并支持多语言混合输入。在常识推理（CommonsenseQA）和数学推理（GSM8K）测试中，Llama 4 70B 版本已经达到了 GPT-4 早期版本的性能水平。</p><h3>部署成本优势</h3><p>对于日均调用量超过 1000 万次的企业，私有化部署 Llama 4 的月均成本约为 $12,000，而同等调用量下使用 GPT-4 API 的成本高达 $120,000。这种 10 倍的成本差异正在推动大量企业转向开源方案。</p><h3>生态建设</h3><p>Meta 同时推出了 Llama Guard 3 安全防护模型和 Prompt Guard 提示词过滤器，构建了完整的开源 AI 安全体系。AWS、Azure 和 GCP 均已支持一键部署 Llama 4 集群。</p>",
+                            readTime: "4 分钟"
+                        }
                     ]
                 },
                 hardware: {
                     title: "AI 硬件",
                     desc: "算力芯片、机器人、端侧设备、AI Phone 等硬件载体技术革新与产业链动向",
                     icon: "M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z",
-                    news: [
-                        "英伟达 B100 芯片量产时间确定",
-                        "华为昇腾 910C 性能曝光",
-                        "特斯拉人形机器人进厂测试",
-                        "Figure AI 与宝马达成合作",
-                        "苹果 M4 Ultra 支持本地大模型",
-                        "高通发布骁龙 8 Gen4 AI 引擎",
-                        "Intel 推出 Gaudi 3 训练卡",
-                        "三星 AI 手机 Galaxy S25 发布"
+                    articles: [
+                        {
+                            title: "英伟达 B100 芯片量产前瞻：Blackwell 架构的革命性突破",
+                            summary: "采用 Chiplet 设计的 B100 在推理性能上较 H100 提升 5 倍，功耗反而降低 15%，将重新定义数据中心算力标准。",
+                            content: "<p>英伟达 CEO 黄仁勋在 GTC 大会预览了即将于下季度量产的 Blackwell 架构 B100 芯片。这款采用台积电 4nm 工艺制造的旗舰产品，首次在 GPU 领域大规模应用 Chiplet（芯粒）设计。</p><h3>技术规格解析</h3><p>B100 集成了两个独立的计算 die，通过 NVLink 5.0 实现 900GB/s 的片间互联。总晶体管数量达到 2080 亿，较 H100 的 800 亿显著增加。FP8 精度下的算力高达 20 petaflops，是 H100 的 4 倍。</p><p>更令人瞩目的是能效比。在运行 175B 参数的 LLM 推理任务时，B100 的每 token 能耗仅为 H100 的 1/5。这对于电费占运营成本 40% 以上的大型数据中心而言，意味着巨大的 TCO（总拥有成本）优势。</p><h3>供应链动态</h3><p>据供应链消息，微软、Meta 和谷歌已锁定 B100 首批产能的 80%，国内厂商如字节跳动和腾讯也在积极争取配额。预计 2026 年 Q2 后供应紧张局面将有所缓解。</p>",
+                            readTime: "7 分钟"
+                        },
+                        {
+                            title: "特斯拉 Optimus 人形机器人：从实验室到工厂车间的商业化之路",
+                            summary: "第二代 Optimus 已能在特斯拉工厂执行电池分装任务，马斯克宣称 2026 年产量将达 10 万台。",
+                            content: "<p>特斯拉最新发布的视频显示，Optimus Gen 2 人形机器人已能够在弗里蒙特工厂自主导航，并完成 4680 电池单元的分拣和装箱工作。这一进展标志着人形机器人从实验室原型向工业级应用的关键跨越。</p><h3>技术细节</h3><p>新一代 Optimus 采用了特斯拉自研的端到端神经网络，直接从视觉输入映射到关节运动，无需传统的路径规划算法。每只手具备 11 个自由度，能够抓取 9kg 重量的物体，精度达到 0.1mm。</p><p>成本控制方面，通过使用与电动车相同的电池包、电机和 FSD 计算平台，Optimus 的 BOM（物料清单）成本已降至 4 万美元以下。马斯克在电话会议中表示，当产量达到 100 万台时，售价有望控制在 2 万美元以内。</p><h3>竞争格局</h3><p>与此同时，Figure AI、Agility Robotics 和波士顿动力也在加速布局。Figure AI 与宝马的合作、Digit 与亚马逊的仓储试点，预示着 2026 年将成为人形机器人商用的元年。</p>",
+                            readTime: "6 分钟"
+                        },
+                        {
+                            title: "端侧 AI 爆发：骁龙 8 Gen4 NPU 算力突破 100 TOPS",
+                            summary: "高通新一代移动平台将支持端侧运行 70B 参数大模型，AI Phone 时代正式来临。",
+                            content: "<p>高通在夏威夷技术峰会上发布了骁龙 8 Gen4 移动平台，其集成的 Hexagon NPU 算力达到惊人的 100 TOPS（每秒万亿次运算），是上一代产品的 3 倍。</p><h3>本地大模型支持</h3><p>借助新的量化压缩技术，8 Gen4 能够在手机端流畅运行 70B 参数的 Llama 模型，或者 13B 参数的模型以全精度模式运行。这意味着无需联网即可实现高质量的文本生成、图像编辑和语音交互。</p><p>荣耀、小米和三星均已宣布将在下一代旗舰机型中搭载该平台。特别值得关注的是，苹果 A18 Pro 芯片传闻也将采用类似的存算一体架构，端侧 AI 算力竞赛已然白热化。</p><h3>隐私与体验</h3><p>端侧 AI 的最大优势在于隐私保护。所有生物识别数据和聊天记录都保留在本地设备，这对于企业级用户和对隐私敏感的消费者极具吸引力。</p>",
+                            readTime: "5 分钟"
+                        }
                     ]
                 },
                 global: {
                     title: "出海动态",
                     desc: "中国 AI 企业全球化布局、海外监管政策、跨境投融资与本地化战略分析",
                     icon: "M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
-                    news: [
-                        "MiniMax 面向东南亚推出产品",
-                        "阿里通义出海中东市场",
-                        "欧盟通过 AI 法案实施细则",
-                        "美国拟限制中国 AI 应用下载",
-                        "新加坡设立 5 亿 AI 基金",
-                        "Shein 引入 AI 设计系统",
-                        "Temu 推出 AI 客服助手",
-                        "字节跳动马来西亚数据中心动工"
+                    articles: [
+                        {
+                            title: "中国 AI 应用出海报告：东南亚与中东成为新增长点",
+                            summary: "2025 年 Q4 数据显示，中国 AI 应用海外下载量环比增长 45%，其中 ChatBot 和图像编辑类应用表现尤为突出。",
+                            content: "<p>Sensor Tower 最新发布的报告显示，中国开发者发行的 AI 应用在海外市场正迎来爆发期。以 MiniMax 的 Talkie、字节跳动的 Coze 和月之暗面的 Kimi 国际版为代表，这些产品在美国、日本和东南亚市场均取得了显著增长。</p><h3>区域市场差异</h3><p>美国市场虽然 ARPU（每用户平均收入）最高，但获客成本也极为昂贵，CPI（单次安装成本）达到 $3.5。相比之下，印度尼西亚、越南等东南亚国家 CPI 仅为 $0.3，且用户对 AI 聊天产品的接受度极高。</p><p>中东市场表现出乎意料。由于阿拉伯语大模型的稀缺性，支持阿语的中国 AI 应用在沙特和阿联酋的用户留存率比英语市场高出 40%。</p><h3>监管挑战</h3><p>欧盟 AI 法案的实施给出海企业带来了合规成本。数据本地化存储、算法透明度要求，以及高昂的 GDPR 合规费用，使得中小开发者更倾向于优先布局亚太和拉美市场。</p>",
+                            readTime: "6 分钟"
+                        },
+                        {
+                            title: "欧盟 AI 法案实施细则深度解读：中国企业如何应对合规挑战",
+                            summary: "强制性算法备案和高风险 AI 系统认证要求，将显著增加出海欧洲市场的门槛和成本。",
+                            content: "<p>欧盟 AI 法案（EU AI Act）于本月正式生效，这是全球首部全面监管人工智能的法律框架。法案采用基于风险的分级管理方法，将 AI 应用分为不可接受风险、高风险、有限风险和最小风险四个等级。</p><h3>合规要点</h3><p>对于生成式 AI 模型，法案要求训练数据必须尊重版权法，模型提供者需要公开用于训练的版权作品摘要。这对于依赖 Common Crawl 等公开数据集训练的大模型厂商构成了直接挑战。</p><p>高风险 AI 系统，如用于招聘、信贷审批和远程生物识别的应用，必须通过 CE 认证并建立风险管理系统。认证成本预计在 5 万-20 万欧元之间，周期长达 6-12 个月。</p><h3>应对策略</h3><p>法律顾问建议，出海企业应优先考虑在爱尔兰或卢森堡设立实体，利用当地的创新沙盒政策进行合规测试。同时，建立专门的 AI 伦理团队和文档管理系统，将是通过认证的关键。</p>",
+                            readTime: "8 分钟"
+                        },
+                        {
+                            title: "跨境数据流动新规：中美 AI 合作的信任危机与替代方案",
+                            summary: "美国商务部拟限制向中国传输 AI 模型权重和数据集，学术界与产业界寻求第三方合作模式。",
+                            content: "<p>随着地缘政治紧张局势升级，美国正在考虑扩大对华技术出口管制的范围，将开源 AI 模型的权重文件和数据集纳入管制清单。这一政策若实施，将严重影响中美在人工智能领域的学术交流和商业合作。</p><h3>影响范围</h3><p>目前 Hugging Face、GitHub 等平台托管的大量开源模型托管着来自全球开发者的贡献。一旦实施 IP 地址限制，中国开发者将无法直接下载 Llama、Stable Diffusion 等模型的最新版本。</p><p>学术界对此反应强烈。MIT、斯坦福等高校的研究人员指出，切断合作将阻碍全球 AI 安全研究的进展，特别是在 AI 对齐（Alignment）和红队测试（Red Teaming）领域。</p><h3>替代路径</h3><p>部分企业开始通过新加坡、阿联酋等第三国设立研发中心，构建合规的数据和模型中转枢纽。中东国家，特别是沙特和阿联酋，正利用其地缘政治中立地位，建设面向全球的 AI 研究基础设施。</p>",
+                            readTime: "7 分钟"
+                        }
                     ]
                 },
                 investment: {
                     title: "投融资",
                     desc: "一级市场融资速递、独角兽估值变动、IPO 动态与资本风向解读",
                     icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
-                    news: [
-                        "月之暗面完成 10 亿美元融资",
-                        "智谱 AI 估值突破 30 亿美元",
-                        "Character.AI 被谷歌收购",
-                        "Midjourney 首次开放融资",
-                        "Cohere 获得甲骨文投资",
-                        "Anthropic 年度营收破 8 亿",
-                        "Stability AI 被收购",
-                        "Perplexity 寻求新一轮融资"
+                    articles: [
+                        {
+                            title: "月之暗面完成 10 亿美元融资，估值突破 30 亿美元",
+                            summary: "阿里领投，红杉中国、小红书跟投，资金将主要用于长文本技术研发和算力储备。",
+                            content: "<p>国内大模型独角兽月之暗面（Moonshot AI）今日宣布完成新一轮 10 亿美元融资，投后估值达 30 亿美元，较上一轮估值翻倍。本轮融资由阿里巴巴领投，红杉中国、小红书战略投资部门跟投。</p><h3>资金用途</h3><p>公司创始人杨植麟表示，新资金将主要用于三个方面：<strong>长上下文窗口技术</strong>的研发（目标支持 1000 万字上下文）、<strong>多模态模型</strong>训练，以及应对用户增长带来的<strong>算力储备</strong>需求。</p><p>目前 Kimi 智能助手的月活跃用户已突破 3000 万，在中文长文本处理场景的市场占有率超过 60%。但高昂的训练和推理成本也给公司带来了巨大的资金压力，据悉其每月算力支出超过 5000 万元。</p><h3>战略协同</h3><p>阿里此次投资后，月之暗面将成为通义千问生态的重要合作伙伴。双方将在模型训练数据、算力集群和商业化渠道方面展开深度合作，共同对抗字节跳动和百度的竞争。</p>",
+                            readTime: "5 分钟"
+                        },
+                        {
+                            title: "Character.AI 被谷歌收购：AI 陪伴赛道的终局还是新起点",
+                            summary: "估值 50 亿美元的收购案震惊硅谷，个性化 AI 助手赛道迎来洗牌时刻。",
+                            content: "<p>谷歌母公司 Alphabet 今日宣布以 50 亿美元全股票交易方式收购 Character.AI，这是继微软收购 Inflection AI 后，大厂吞并 AI 初创企业的又一重磅案例。</p><h3>交易结构</h3><p>值得注意的是，Character.AI 的核心团队，包括两位创始人 Noam Shazeer 和 Daniel De Freitas 都将加入 DeepMind 继续研究工作。这实际上是一次 acquihire（人才收购），而非单纯的产品收购。</p><p>Character.AI 的现有产品将继续运营，但将使用谷歌的云基础设施和基础模型技术。这意味着其自主研发的模型可能会被 Gemini 系列取代，引发用户对产品独立性的担忧。</p><h3>行业影响</h3><p>此次收购加剧了市场对 AI 独角兽独立发展前景的悲观情绪。Replika、Talkie 等同类应用面临更大的融资压力，预计下半年将有更多并购案例发生。</p>",
+                            readTime: "6 分钟"
+                        },
+                        {
+                            title: "Anthropic 年度营收破 8 亿美元，挑战 OpenAI 的雄心壮志",
+                            summary: "企业级 API 收入占 70%，Claude 在金融和医疗领域渗透率快速提升。",
+                            content: "<p>据 The Information 报道，Anthropic 的年度经常性收入（ARR）已突破 8 亿美元，较年初增长 400%，增速超过同期的 OpenAI。</p><h3>收入结构</h3><p>与 OpenAI 高度依赖 C 端订阅（ChatGPT Plus）不同，Anthropic 的收入 70% 来自企业 API 调用。其客户包括桥水基金、辉瑞制药和 Spotify 等重量级企业，主要应用于合同审查、药物研发文献分析和内容审核等场景。</p><p>这种收入结构更加稳健，客户粘性更高。但一旦模型性能被竞争对手超越，切换成本也相对较高，因此 Anthropic 必须在技术上保持领先。</p><h3>融资计划</h3><p>公司正在寻求新一轮 20 亿美元融资，估值目标 300 亿美元。谷歌已承诺领投，亚马逊也可能跟投。这笔资金将用于训练下一代 Claude 4 模型，预计参数量将达到万亿级别。</p>",
+                            readTime: "5 分钟"
+                        }
                     ]
                 },
                 industry: {
                     title: "产业观察",
                     desc: "行业政策解读、竞争格局分析、技术趋势预测与商业模式演进研究",
                     icon: "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4",
-                    news: [
-                        "2026 全球 AI 支出预测报告",
-                        "中国算力基础设施白皮书",
-                        "大模型价格战影响分析",
-                        "AI 能耗问题引发监管关注",
-                        "教育行业 AI 渗透率超 60%",
-                        "医疗 AI 诊断准确率首超人类",
-                        "金融大模型监管沙盒启动",
-                        "自动驾驶 L4 牌照发放加速"
+                    articles: [
+                        {
+                            title: "2026 全球 AI 支出预测：企业级应用进入规模化部署阶段",
+                            summary: "Gartner 报告显示全球 AI 软件支出将达 2500 亿美元，Agent 自动化成为最大增长点。",
+                            content: "<p>Gartner 最新发布的《全球 AI 市场预测报告》指出，2026 年企业级 AI 软件支出将达到 2500 亿美元，较 2025 年增长 35%。其中，AI Agent（智能体）自动化平台成为增长最快的细分领域，预计增速超过 100%。</p><h3>企业部署现状</h3><p>调研显示，财富 500 强企业中已有 68% 在生产环境中部署了生成式 AI 应用，较一年前的 23% 大幅提升。主要应用场景包括：代码生成（45%）、客户服务（38%）、内容营销（32%）和数据分析（28%）。</p><p>但 ROI（投资回报率）仍然是一个挑战。仅有 35% 的企业表示其 AI 项目已实现正向回报，大多数企业仍处于试点和探索阶段。</p><h3>技术债务风险</h3><p>报告警告称，快速采用 AI 技术可能导致严重的技术债务。许多企业为了快速上线，忽视了数据质量、模型可解释性和安全合规，这将在未来 2-3 年内引发系统性风险。</p>",
+                            readTime: "7 分钟"
+                        },
+                        {
+                            title: "AI 能耗危机：大模型训练的碳足迹与绿色计算之路",
+                            summary: "训练 GPT-5 的碳排放相当于 5000 辆汽车一年的排放量，可持续 AI 成为新焦点。",
+                            content: "<p>随着大模型参数量的指数级增长，AI 训练的能耗问题日益严峻。据估算，训练 GPT-5 级别的模型需要消耗超过 50 万兆瓦时的电力，产生约 2.5 万吨二氧化碳排放，相当于 5000 辆乘用车一年的排放量。</p><h3>数据中心困境</h3><p>在弗吉尼亚州，数据中心已占据全州电力消耗的 20%，导致电网负荷过重。微软与 Constellation Energy 签署协议，重启了三里岛核电站的一个机组，专门为其 AI 数据中心供电。</p><p>谷歌和亚马逊也在积极寻求清洁能源解决方案，包括地热、海上风电和核聚变投资。但这些基础设施的建设周期长达 5-10 年，难以满足当前算力需求的爆发式增长。</p><h3>技术解决方案</h3><p>学术界正在探索低能耗训练方法，包括模型剪枝、量化和蒸馏技术。NeurIPS 2025 最佳论文奖授予了一项名为 'FlashEfficient' 的训练优化算法，声称能在保持性能的前提下减少 40% 的能耗。</p>",
+                            readTime: "8 分钟"
+                        },
+                        {
+                            title: "AI 原生应用设计范式：从 Copilot 到 Autopilot 的交互革命",
+                            summary: "下一代应用界面将以 Agent 为中心，传统 GUI 范式面临重构。",
+                            content: "<p>随着大模型能力的提升，软件交互范式正在发生根本性转变。从早期的 Copilot（副驾驶）模式——即 AI 辅助人类完成任务，向 Autopilot（自动驾驶）模式——即 AI 自主完成任务并仅向人类汇报关键决策演进。</p><h3>设计原则重构</h3><p>传统的图形用户界面（GUI）基于人类操作设计，但在 AI Agent 时代，界面需要同时服务人类和 AI 两个用户。这要求新的设计原则：<strong>可解释性</strong>（AI 为什么这样做）、<strong>可干预性</strong>（人类如何接管控制）和<strong>可验证性</strong>（如何确认 AI 没犯错）。</p><p>Devin（AI 软件工程师）和 Operator（OpenAI 即将发布的 Agent）展示了这种新范式的雏形：用户用自然语言描述目标，AI 自主规划并执行一系列操作，只在需要决策或遇到异常时请求人类输入。</p><h3>创业机会</h3><p>这种范式转移孕育着巨大的创业机会。现有的 SaaS 软件都需要重新设计以适应 Agent 工作流，这为新一代 AI 原生应用创造了替代传统软件的历史机遇。</p>",
+                            readTime: "6 分钟"
+                        }
                     ]
                 },
                 product: {
                     title: "产品快讯",
                     desc: "AI 应用新品发布、功能更新、用户体验优化与市场化策略追踪报道",
                     icon: "M13 10V3L4 14h7v7l9-11h-7z",
-                    news: [
-                        "Midjourney V7 支持中文提示词",
-                        "Runway Gen-3 正式发布",
-                        "Adobe Firefly 集成 PR 剪辑",
-                        "Notion AI 推出工作流自动化",
-                        "Figma AI 设计助手上线",
-                        "Canva 魔法设计功能更新",
-                        "Discord 内置 AI 聊天机器人",
-                        "Spotify AI DJ 扩展至亚洲"
+                    articles: [
+                        {
+                            title: "Midjourney V7 发布：中文提示词支持与摄影级真实感突破",
+                            summary: "新版本支持原生中文描述，在人物摄影和建筑渲染场景达到以假乱真效果。",
+                            content: "<p>Midjourney 今日发布了备受期待的 V7 版本，这是该图像生成模型两年来的最大更新。最显著的变化是<strong>原生中文支持</strong>——用户可以直接输入中文提示词，模型对中文古诗词和文化隐喻的理解准确度令人惊叹。</p><h3>画质突破</h3><p>在人物摄影方面，V7 解决了长期以来困扰用户的「手指畸形」和「眼神空洞」问题。生成的皮肤纹理、毛发细节和光线反射已达到商业摄影级别。测试中，专业摄影师仅有 60% 的概率能分辨出 AI 生成与真实拍摄的照片。</p><p>建筑渲染和室内设计是另一个亮点。模型理解了空间透视、材质反光和家具比例，生成的室内设计图可直接用于客户提案。</p><h3>价格策略</h3><p>Midjourney 同时调整了定价，Pro 计划月费从 $60 降至 $40，并新增了「商业版权保护」服务，承诺若生成的图像涉及版权争议，公司将承担法律责任。</p>",
+                            readTime: "5 分钟"
+                        },
+                        {
+                            title: "Notion AI 工作流自动化正式上线：连接 50+ 第三方服务",
+                            summary: "用户可通过自然语言创建跨应用自动化流程，挑战 Zapier 和 Make 的市场地位。",
+                            content: "<p>知识管理工具 Notion 今日全面开放了 AI Workflow 功能，允许用户通过自然语言描述，自动创建连接 Gmail、Slack、GitHub、Salesforce 等 50 多个应用的自动化流程。</p><h3>使用场景</h3><p>例如，用户可以说：「当我在 Gmail 收到客户投诉邮件时，在 Notion 创建处理任务，并发送到 Slack 客服频道」，系统会自动生成相应的触发器和动作序列。</p><p>与传统的 Zapier 相比，Notion AI 的优势在于上下文理解能力。它能够读取 Notion 数据库中的内容，基于文档上下文做出智能决策，而不仅仅是简单的 if-this-then-that 逻辑。</p><h3>竞争态势</h3><p>这一功能直接将 Notion 从笔记工具扩展为 AI 自动化平台，与 Zapier、Make 和微软 Power Automate 形成正面竞争。凭借 3000 万用户基数，Notion 有机会成为 AI 时代的工作流入口。</p>",
+                            readTime: "4 分钟"
+                        },
+                        {
+                            title: "Spotify AI DJ 扩展至亚洲市场：个性化电台的算法革命",
+                            summary: "基于大模型的语音播报和歌曲推荐，让音乐收听体验从被动选择变为主动陪伴。",
+                            content: "<p>Spotify 宣布将其 AI DJ 功能扩展至日本、韩国和东南亚市场。该功能利用生成式 AI 和语音合成技术，创建了一个虚拟 DJ，不仅为用户推荐歌曲，还用自然语言介绍音乐背景和艺人故事。</p><h3>技术实现</h3><p>AI DJ 基于 Spotify 收购的 Sonantic 语音技术和 OpenAI 的大语言模型。它能够分析用户的听歌历史，识别情绪状态，并据此调整播放列表的风格和节奏。</p><p>语音方面，Spotify 训练了多位真实 DJ 的声音模型，支持英语、日语和韩语的自然播报。中文版本预计将在下半年推出。</p><h3>用户反馈</h3><p>数据显示，使用 AI DJ 功能的用户平均收听时长增加了 35%，跳过歌曲的比例下降了 50%。这种「被懂」的体验显著提升了用户粘性，为音乐流媒体平台的差异化竞争提供了新思路。</p>",
+                            readTime: "4 分钟"
+                        }
                     ]
                 }
             }
         };
 
         // ==================== 核心逻辑 ====================
-        
-        // 设置起始日期（第1期）
         const START_DATE = new Date('2026-02-02');
-        
-        // 获取日期差异（天数）
+        let currentCategory = null;
+
         function getDaysDifference(date1, date2) {
             const oneDay = 24 * 60 * 60 * 1000;
             return Math.round(Math.abs((date1 - date2) / oneDay));
         }
-        
-        // 基于种子的伪随机数生成（确保同一天结果一致）
+
         function seededRandom(seed) {
             const x = Math.sin(seed++) * 10000;
             return x - Math.floor(x);
         }
-        
-        // 格式化日期
+
         function formatDate(date) {
             const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
             const year = date.getFullYear();
@@ -420,39 +542,118 @@
             const weekday = weekdays[date.getDay()];
             return `${year}-${month}-${day} ${weekday}`;
         }
-        
-        // 生成相对时间文本
+
         function getRelativeTime(seed, index) {
             const hours = Math.floor(seededRandom(seed + index) * 12);
             if (hours === 0) return '刚刚';
-            if (hours <= 2) return `${hours}小时前`;
-            if (hours <= 6) return `${hours}小时前`;
-            return '今日早间';
+            return `${hours}小时前`;
         }
-        
-        // 更新页面内容
+
+        // 路由切换函数
+        function showHome() {
+            document.getElementById('home-view').classList.remove('hidden');
+            document.getElementById('category-view').classList.add('hidden');
+            document.getElementById('article-view').classList.add('hidden');
+            document.getElementById('subscribe-section').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function showCategory() {
+            document.getElementById('home-view').classList.add('hidden');
+            document.getElementById('category-view').classList.remove('hidden');
+            document.getElementById('article-view').classList.add('hidden');
+            document.getElementById('subscribe-section').classList.add('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function showArticle() {
+            document.getElementById('home-view').classList.add('hidden');
+            document.getElementById('category-view').classList.add('hidden');
+            document.getElementById('article-view').classList.remove('hidden');
+            document.getElementById('subscribe-section').classList.add('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // 打开分类
+        function openCategory(categoryKey) {
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const daysDiff = getDaysDifference(today, START_DATE);
+            const todaySeed = today.getTime();
+            
+            const cat = contentDatabase.categories[categoryKey];
+            currentCategory = cat;
+            
+            // 更新分类头部
+            document.getElementById('category-title').textContent = cat.title;
+            document.getElementById('category-desc').textContent = cat.desc;
+            document.getElementById('category-icon').innerHTML = `
+                <svg class="w-6 h-6 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="${cat.icon}"/>
+                </svg>
+            `;
+            
+            // 生成文章列表（基于日期选择文章）
+            const articlesList = document.getElementById('articles-list');
+            const shuffledArticles = [...cat.articles].sort(() => seededRandom(todaySeed) - 0.5);
+            const selectedArticles = shuffledArticles.slice(0, 3); // 每天显示3篇
+            
+            articlesList.innerHTML = selectedArticles.map((article, index) => {
+                const publishTime = getRelativeTime(todaySeed, index);
+                return `
+                    <div onclick="openArticle(${index})" class="glass-panel rounded-xl p-6 cursor-pointer hover:border-gold-500/30 transition-all card-hover-transform group animate-slide-up" style="animation-delay: ${index * 100}ms">
+                        <div class="flex justify-between items-start mb-3">
+                            <h3 class="font-serif text-xl text-gold-100 group-hover:text-gold-300 transition-colors line-clamp-2 flex-1 mr-4">${article.title}</h3>
+                            <span class="text-xs text-gray-500 whitespace-nowrap">${publishTime}</span>
+                        </div>
+                        <p class="text-gray-400 text-sm mb-4 line-clamp-2 font-light">${article.summary}</p>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2 text-xs text-gold-600/80">
+                                <span class="w-1 h-1 bg-gold-500 rounded-full"></span>
+                                <span>阅读时长 ${article.readTime}</span>
+                            </div>
+                            <span class="text-gold-500 text-sm group-hover:translate-x-1 transition-transform">阅读全文 →</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            // 存储当前显示的文章供详情页使用
+            window.currentArticles = selectedArticles;
+            
+            showCategory();
+        }
+
+        // 打开文章详情
+        function openArticle(index) {
+            const article = window.currentArticles[index];
+            
+            document.getElementById('article-title').textContent = article.title;
+            document.getElementById('article-content').innerHTML = article.content;
+            document.getElementById('article-category').textContent = currentCategory.title;
+            document.getElementById('article-time').textContent = document.getElementById('current-date-display').textContent;
+            document.getElementById('article-readtime').textContent = article.readTime;
+            
+            showArticle();
+        }
+
         function updateContent() {
             const now = new Date();
             const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            
-            // 计算期数（从2026-02-02起为第1期）
             const daysDiff = getDaysDifference(today, START_DATE);
             const issueNumber = daysDiff + 1;
+            const todaySeed = today.getTime();
             
-            // 更新期数显示
             document.getElementById('issue-number').textContent = issueNumber;
             document.getElementById('current-date-display').textContent = formatDate(now);
             
-            // 生成今日种子（基于日期）
-            const todaySeed = today.getTime();
-            
-            // ================== 更新核心摘要 ==================
+            // 更新核心摘要
             const summaryContainer = document.getElementById('summary-container');
             const summaryIndex = daysDiff % contentDatabase.summaries.length;
             const todaySummaries = contentDatabase.summaries[summaryIndex];
             
             summaryContainer.innerHTML = todaySummaries.map((text, index) => `
-                <div class="flex gap-4 items-start p-4 rounded-lg bg-obsidian-400/40 border border-white/5 hover:border-gold-500/20 transition-colors animate-fade-in" style="animation-delay: ${index * 100}ms">
+                <div class="flex gap-4 items-start p-4 rounded-lg bg-obsidian-400/40 border border-white/5 hover:border-gold-500/20 transition-colors animate-slide-up" style="animation-delay: ${index * 100}ms">
                     <span class="flex-shrink-0 w-8 h-8 rounded-full bg-gold-500/20 text-gold-400 flex items-center justify-center text-sm font-serif font-bold border border-gold-500/30">
                         0${index + 1}
                     </span>
@@ -462,22 +663,19 @@
                 </div>
             `).join('');
             
-            // ================== 更新分类列表 ==================
+            // 更新分类卡片
             const categoriesContainer = document.getElementById('categories-container');
             const categoryKeys = Object.keys(contentDatabase.categories);
             
             const categoryCards = categoryKeys.map((key, index) => {
                 const cat = contentDatabase.categories[key];
-                // 基于日期和分类生成"随机"但确定的数字
                 const articleCount = Math.floor(seededRandom(todaySeed + index) * 8) + 1;
                 const updateTime = getRelativeTime(todaySeed, index);
-                
-                // 选取该分类下的新闻（基于日期轮换）
-                const newsIndex = daysDiff % cat.news.length;
-                const highlightNews = cat.news[newsIndex];
+                const newsIndex = daysDiff % cat.articles.length;
+                const highlightNews = cat.articles[newsIndex].title;
                 
                 return `
-                    <article class="card-hover-transform group relative glass-panel rounded-xl overflow-hidden border border-white/5 cursor-pointer h-full">
+                    <article onclick="openCategory('${key}')" class="card-hover-transform group relative glass-panel rounded-xl overflow-hidden border border-white/5 cursor-pointer h-full">
                         <div class="absolute inset-0 bg-gradient-to-br from-gold-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                         <div class="relative p-6 h-full flex flex-col">
                             <div class="flex items-center justify-between mb-4">
@@ -510,23 +708,8 @@
             
             categoriesContainer.innerHTML = categoryCards;
         }
-        
-        // 页面加载时执行
+
         document.addEventListener('DOMContentLoaded', updateContent);
-        
-        // 添加淡入动画样式
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes fadeIn {
-                from { opacity: 0; transform: translateY(10px); }
-                to { opacity: 1; transform: translateY(0); }
-            }
-            .animate-fade-in {
-                animation: fadeIn 0.6s ease-out forwards;
-                opacity: 0;
-            }
-        `;
-        document.head.appendChild(style);
     </script>
 </body>
 </html>
