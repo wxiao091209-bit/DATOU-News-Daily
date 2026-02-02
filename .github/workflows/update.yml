@@ -26,6 +26,8 @@ jobs:
         pip install feedparser requests beautifulsoup4
         
     - name: Fetch latest news and update HTML
+      env:
+        NEWS_API_KEY: ${{ secrets.NEWS_API_KEY }}
       run: python scripts/update_news.py
       
     - name: Commit and push changes
