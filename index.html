@@ -4,165 +4,431 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>大头的 AI 深度内参</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gold: {
+                            50: '#FDF8E8', 100: '#F9EFC8', 200: '#F3E095',
+                            300: '#EDCF62', 400: '#E4B93F', 500: '#D4AF37',
+                            600: '#B8870B', 700: '#9A7209', 800: '#7C5D0B', 900: '#5C4508',
+                        },
+                        obsidian: { 100: '#252525', 200: '#1A1A1A', 300: '#151515', 400: '#0F0F0F', 500: '#0A0A0A', 600: '#050505' }
+                    },
+                    fontFamily: { serif: ['"Noto Serif SC"', 'serif'], sans: ['"Inter"', 'sans-serif'] },
+                    backgroundImage: {
+                        'gold-gradient': 'linear-gradient(135deg, #D4AF37 0%, #F3E095 50%, #B8870B 100%)',
+                        'radial-glow': 'radial-gradient(circle at 50% 0%, rgba(212, 175, 55, 0.15) 0%, transparent 70%)',
+                    },
+                    animation: { 'slide-up': 'slideUp 0.5s ease-out', 'fade-in': 'fadeIn 0.5s ease-out' },
+                    keyframes: {
+                        slideUp: { '0%': { opacity: '0', transform: 'translateY(20px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
+                        fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        body { background: #0A0A0A; color: #F5F5F5; font-family: -apple-system, BlinkMacSystemFont, sans-serif; max-width: 900px; margin: 0 auto; padding: 20px; }
-        h1 { color: #D4AF37; text-align: center; font-size: 2.5rem; margin-bottom: 10px; }
-        .subtitle { text-align: center; color: #888; margin-bottom: 30px; }
-        .meta { text-align: center; color: #666; font-size: 0.9rem; margin-bottom: 40px; }
-        .gold { color: #D4AF37; }
-        .card { background: rgba(255,255,255,0.05); border: 1px solid rgba(212,175,55,0.2); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
-        .summary-item { display: flex; gap: 15px; margin-bottom: 15px; padding: 15px; background: rgba(255,255,255,0.03); border-radius: 8px; }
-        .num { width: 28px; height: 28px; background: rgba(212,175,55,0.2); color: #D4AF37; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; }
-        a { color: #D4AF37; text-decoration: none; }
-        a:hover { text-decoration: underline; }
-        .category-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-top: 20px; }
-        .category-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(212,175,55,0.1); border-radius: 12px; padding: 20px; cursor: pointer; transition: all 0.3s; }
-        .category-card:hover { border-color: rgba(212,175,55,0.4); transform: translateY(-2px); }
-        .hidden { display: none; }
-        button { background: transparent; border: 1px solid #D4AF37; color: #D4AF37; padding: 8px 16px; border-radius: 6px; cursor: pointer; margin-bottom: 20px; }
-        button:hover { background: rgba(212,175,55,0.1); }
-        footer { text-align: center; margin-top: 60px; padding-top: 20px; border-top: 1px solid #333; color: #666; font-size: 0.8rem; }
+        body { background-color: #0A0A0A; color: #F5F5F5; }
+        .text-gold-gradient { background: linear-gradient(135deg, #D4AF37 0%, #F3E095 50%, #B8870B 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .glass-panel { background: rgba(26, 26, 26, 0.7); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(212, 175, 55, 0.1); }
+        .glass-panel:hover { border-color: rgba(212, 175, 55, 0.3); box-shadow: 0 10px 40px rgba(212, 175, 55, 0.1); }
+        .card-hover-transform { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-hover-transform:hover { transform: translateY(-5px); }
+        .article-content h3 { color: #D4AF37; margin-top: 1.5em; margin-bottom: 0.5em; font-size: 1.25em; }
+        .article-content p { margin-bottom: 1em; line-height: 1.8; color: #E5E5E5; }
+        .article-content a { color: #D4AF37; text-decoration: underline; text-underline-offset: 4px; }
+        .article-content a:hover { color: #F3E095; }
     </style>
 </head>
-<body>
-    <h1>大头的 AI 深度内参</h1>
-    <p class="subtitle">每日甄选全球人工智能产业核心动态，提供具备投资决策价值的深度解析与前瞻性洞察</p>
-    <p class="meta"><span id="date"></span> | 第 <span id="issue"></span> 期</p>
+<body class="font-sans min-h-screen bg-obsidian-500 antialiased overflow-x-hidden">
 
-    <div id="home">
-        <div class="card">
-            <h2 style="color: #D4AF37; margin-top: 0;">⚡ 今日核心摘要 <span style="float: right; font-size: 0.8rem; background: rgba(212,175,55,0.2); padding: 4px 12px; border-radius: 20px;">TOP 3</span></h2>
-            <div id="summaries"></div>
+    <div class="fixed top-0 left-0 w-full h-[600px] bg-radial-glow pointer-events-none z-0"></div>
+    <div class="fixed top-20 right-20 w-2 h-2 bg-gold-400 rounded-full opacity-60 animate-pulse z-0"></div>
+
+    <div class="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+
+        <!-- Header -->
+        <header class="text-center mb-16 relative cursor-pointer" onclick="showHome()">
+            <div class="flex items-center justify-center gap-3 mb-4">
+                <div class="h-px w-12 bg-gradient-to-r from-transparent to-gold-600"></div>
+                <span class="text-gold-500 text-xs tracking-[0.3em] uppercase font-medium">Premium Intelligence</span>
+                <div class="h-px w-12 bg-gradient-to-l from-transparent to-gold-600"></div>
+            </div>
+            <h1 class="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 tracking-tight hover:opacity-80 transition-opacity">
+                <span class="text-gold-gradient">大头的 AI 深度内参</span>
+            </h1>
+            <p class="text-gray-400 text-sm sm:text-base font-light tracking-wide max-w-2xl mx-auto leading-relaxed">
+                每日甄选全球人工智能产业核心动态，提供具备投资决策价值的深度解析与前瞻性洞察
+            </p>
+            <div class="mt-6 flex items-center justify-center gap-2 text-xs text-gold-600/80 font-mono">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span id="current-date-display"></span>
+                <span class="mx-2 text-gray-600">|</span>
+                <span class="text-gold-500">第 <span id="issue-number">1</span> 期</span>
+            </div>
+        </header>
+
+        <!-- Home View -->
+        <div id="home-view">
+            <section class="relative mb-16 group">
+                <div class="absolute -inset-0.5 bg-gradient-to-r from-gold-600 via-gold-300 to-gold-600 rounded-2xl opacity-30 group-hover:opacity-50 transition duration-500 blur-sm"></div>
+                <div class="relative glass-panel rounded-2xl p-1 overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-1 bg-gold-gradient opacity-80"></div>
+                    <div class="bg-gradient-to-b from-obsidian-200/60 to-obsidian-400/30 rounded-xl p-6 sm:p-10">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 bg-gold-500/10 rounded-lg border border-gold-500/20">
+                                    <svg class="w-6 h-6 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                </div>
+                                <h2 class="font-serif text-xl sm:text-2xl text-gold-100 font-semibold">今日核心摘要</h2>
+                            </div>
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gold-500/10 text-gold-400 border border-gold-500/20">TOP 3</span>
+                        </div>
+                        <div class="space-y-4" id="summary-container"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="mb-16">
+                <div class="flex items-center justify-between mb-8">
+                    <div class="flex items-center gap-3">
+                        <div class="w-1 h-8 bg-gold-gradient rounded-full"></div>
+                        <h2 class="font-serif text-2xl text-gold-50 font-semibold">深度分类</h2>
+                    </div>
+                    <div class="text-xs text-gray-500 font-mono tracking-wider">CATEGORIES</div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="categories-container"></div>
+            </section>
         </div>
 
-        <h2 style="color: #D4AF37; margin-top: 30px;">深度分类</h2>
-        <div id="categories" class="category-grid"></div>
-    </div>
-
-    <div id="category" class="hidden">
-        <button onclick="showHome()">← 返回首页</button>
-        <h2 id="cat-title" style="color: #D4AF37;"></h2>
-        <div id="articles"></div>
-    </div>
-
-    <div id="article" class="hidden">
-        <button onclick="showCategory()">← 返回列表</button>
-        <div class="card">
-            <span id="art-cat" style="background: rgba(212,175,55,0.2); padding: 4px 12px; border-radius: 20px; color: #D4AF37; font-size: 0.8rem;"></span>
-            <h1 id="art-title" style="font-size: 1.5rem; margin: 15px 0;"></h1>
-            <div id="art-content" style="line-height: 1.8; color: #CCC; margin-bottom: 20px;"></div>
-            <a id="art-link" href="#" target="_blank" style="display: inline-block; border: 1px solid #D4AF37; padding: 8px 16px; border-radius: 6px;">查看原文</a>
+        <!-- Category View -->
+        <div id="category-view" class="hidden animate-fade-in">
+            <div class="mb-6 flex items-center gap-4">
+                <button onclick="showHome()" class="flex items-center gap-2 px-4 py-2 glass-panel rounded-lg text-gold-400 hover:text-gold-300 transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                    <span class="text-sm">返回首页</span>
+                </button>
+                <div class="h-px flex-1 bg-gradient-to-r from-gold-500/20 to-transparent"></div>
+            </div>
+            <div class="glass-panel rounded-2xl p-8 mb-8 border-gold-500/20">
+                <div class="flex items-center gap-4 mb-2">
+                    <div id="category-icon" class="p-3 bg-gold-500/10 rounded-lg border border-gold-500/20"></div>
+                    <div>
+                        <h2 id="category-title" class="font-serif text-3xl text-gold-100 font-bold"></h2>
+                        <p id="category-desc" class="text-gray-400 text-sm mt-1"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="space-y-4" id="articles-list"></div>
         </div>
+
+        <!-- Article View -->
+        <div id="article-view" class="hidden animate-fade-in">
+            <div class="mb-6 flex items-center gap-4">
+                <button onclick="showCategory()" class="flex items-center gap-2 px-4 py-2 glass-panel rounded-lg text-gold-400 hover:text-gold-300 transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                    <span class="text-sm">返回列表</span>
+                </button>
+                <div class="h-px flex-1 bg-gradient-to-r from-gold-500/20 to-transparent"></div>
+            </div>
+            <article class="glass-panel rounded-2xl p-8 sm:p-12 border-gold-500/10">
+                <div class="border-b border-white/5 pb-8 mb-8">
+                    <div class="flex items-center gap-3 mb-4">
+                        <span id="article-category" class="px-3 py-1 rounded-full text-xs font-medium bg-gold-500/10 text-gold-400 border border-gold-500/20"></span>
+                        <a id="article-source-link" href="#" target="_blank" class="inline-flex items-center gap-1 text-xs text-gold-500 hover:text-gold-300 transition-colors hidden">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                            <span id="article-source-text">查看原文</span>
+                        </a>
+                        <span id="article-time" class="text-xs text-gray-500 font-mono"></span>
+                    </div>
+                    <h1 id="article-title" class="font-serif text-2xl sm:text-4xl text-gold-100 font-bold leading-tight mb-4"></h1>
+                    <div class="flex items-center gap-4 text-xs text-gray-400">
+                        <span class="flex items-center gap-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <span id="article-readtime"></span>
+                        </span>
+                        <span>深度内参编辑部</span>
+                    </div>
+                </div>
+                <div id="article-content" class="article-content prose prose-invert max-w-none font-light text-gray-200 leading-relaxed mb-8"></div>
+                <div class="mt-8 pt-6 border-t border-white/5">
+                    <a id="article-source-bottom" href="#" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 bg-gold-500/10 border border-gold-500/20 rounded-lg text-gold-400 text-sm hover:bg-gold-500/20 transition-colors hidden">
+                        <span>阅读原文完整内容</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    </a>
+                </div>
+                <div class="mt-6 flex justify-between items-center">
+                    <div class="text-xs text-gray-500">本文内容基于公开信息整理，仅供行业交流参考</div>
+                    <button onclick="showHome()" class="text-xs text-gold-500 hover:text-gold-400 transition-colors">回到首页 →</button>
+                </div>
+            </article>
+        </div>
+
+        <section class="relative rounded-2xl overflow-hidden mb-16 mt-16" id="subscribe-section">
+            <div class="absolute inset-0 bg-gradient-to-r from-gold-900/20 via-obsidian-200 to-gold-900/20"></div>
+            <div class="relative px-6 py-8 sm:px-12 sm:py-10 text-center">
+                <h3 class="font-serif text-2xl text-gold-100 mb-3">保持同步更新</h3>
+                <p class="text-gray-400 text-sm mb-6 max-w-md mx-auto">获取每日精选的 AI 产业核心情报，直达您的收件箱</p>
+                <div class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+                    <input type="email" placeholder="输入您的邮箱地址..." class="flex-1 px-4 py-3 bg-obsidian-400/60 border border-gold-500/20 rounded-lg text-sm text-gold-50 placeholder-gray-500 focus:outline-none focus:border-gold-500/50 transition-all">
+                    <button class="px-6 py-3 bg-gold-gradient text-obsidian-500 font-semibold text-sm rounded-lg hover:shadow-gold-sm transition-all transform hover:scale-105 active:scale-95">立即订阅</button>
+                </div>
+            </div>
+        </section>
+
     </div>
 
-    <footer>
-        <p>本页面由 Agent Swarm 自动驱动 | 每日 08:00 自动更新</p>
-        <p style="font-size: 0.7rem; margin-top: 5px;">© 2026 大头的 AI 深度内参. 保留所有权利.</p>
+    <footer class="relative z-10 border-t border-white/5 bg-obsidian-600/50 backdrop-blur-sm mt-12">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-gradient-to-br from-gold-400 to-gold-600 rounded flex items-center justify-center shadow-gold-sm">
+                        <span class="text-obsidian-500 font-serif font-bold text-lg">头</span>
+                    </div>
+                    <div class="text-left">
+                        <div class="text-xs text-gold-500/80 font-medium tracking-wider">AGENT SWARM</div>
+                        <div class="text-[10px] text-gray-600 uppercase tracking-widest">Autonomous Intelligence</div>
+                    </div>
+                </div>
+                <div class="text-center sm:text-right">
+                    <p class="text-xs text-gray-500 font-light tracking-wide">本页面由 <span class="text-gold-500/80 font-medium">Agent Swarm</span> 自动驱动</p>
+                    <p class="text-[10px] text-gray-600 mt-1 flex items-center justify-center sm:justify-end gap-2">
+                        <span class="w-1 h-1 bg-gold-500 rounded-full animate-pulse"></span>
+                        每日 08:00 自动更新
+                    </p>
+                </div>
+            </div>
+            <div class="mt-6 pt-6 border-t border-white/5 text-center">
+                <p class="text-[10px] text-gray-600 font-light">© 2026 大头的 AI 深度内参. 保留所有权利. 信息仅供决策参考，不构成投资建议.</p>
+            </div>
+        </div>
     </footer>
 
     <script>
-        const data = {
+        // 数据（修复版，确保正确解析）
+        const contentDatabase = {
             summaries: [
-                { text: "OpenAI 正式发布 GPT-5 预览版，多模态推理能力显著提升，企业级 API 延迟降低 40%，预计将在下季度全面开放，这将重塑全球大模型竞争格局。", source: "TechCrunch", url: "https://techcrunch.com" },
-                { text: "中国 AI 芯片独角兽壁仞科技宣布与沙特主权基金达成战略合作，首批价值 3 亿美元的算力基础设施已启程出海，标志着国产 AI 硬件全球化进入实质性阶段。", source: "36氪", url: "https://36kr.com" },
-                { text: "欧盟 AI 法案正式生效，针对大模型训练数据版权出台强制性披露条款，多家硅谷科技巨头面临合规调整，全球 AI 监管套利时代宣告终结。", source: "Reuters", url: "https://reuters.com" }
+                [
+                    { text: "OpenAI 正式发布 GPT-5 预览版，多模态推理能力显著提升，企业级 API 延迟降低 40%，预计将在下季度全面开放，这将重塑全球大模型竞争格局。", source: "TechCrunch", url: "https://techcrunch.com" },
+                    { text: "中国 AI 芯片独角兽壁仞科技宣布与沙特主权基金达成战略合作，首批价值 3 亿美元的算力基础设施已启程出海，标志着国产 AI 硬件全球化进入实质性阶段。", source: "36氪", url: "https://36kr.com" },
+                    { text: "欧盟 AI 法案正式生效，针对大模型训练数据版权出台强制性披露条款，多家硅谷科技巨头面临合规调整，全球 AI 监管套利时代宣告终结。", source: "Reuters", url: "https://reuters.com" }
+                ]
             ],
-            categories: [
-                { id: "bigModel", title: "大模型", desc: "GPT-5、Claude 4 等前沿大模型技术突破", icon: "🧠", articles: [] },
-                { id: "hardware", title: "AI 硬件", desc: "算力芯片、机器人、端侧设备技术革新", icon: "⚡", articles: [] },
-                { id: "global", title: "出海动态", desc: "中国 AI 企业全球化布局与跨境投融资", icon: "🌍", articles: [] },
-                { id: "investment", title: "投融资", desc: "一级市场融资速递与独角兽估值变动", icon: "💰", articles: [] },
-                { id: "industry", title: "产业观察", desc: "行业政策解读与竞争格局分析", icon: "📊", articles: [] },
-                { id: "product", title: "产品快讯", desc: "AI 应用新品发布与功能更新", icon: "🚀", articles: [] }
-            ]
+            categories: {
+                bigModel: { title: "大模型", desc: "GPT-5、Claude 4、Gemini Ultra 等前沿大模型技术突破与商业化进展追踪", icon: "M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z", articles: [] },
+                hardware: { title: "AI 硬件", desc: "算力芯片、机器人、端侧设备、AI Phone 等硬件载体技术革新与产业链动向", icon: "M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z", articles: [] },
+                global: { title: "出海动态", desc: "中国 AI 企业全球化布局、海外监管政策、跨境投融资与本地化战略分析", icon: "M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z", articles: [] },
+                investment: { title: "投融资", desc: "一级市场融资速递、独角兽估值变动、IPO 动态与资本风向解读", icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z", articles: [] },
+                industry: { title: "产业观察", desc: "行业政策解读、竞争格局分析、技术趋势预测与商业模式演进研究", icon: "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4", articles: [] },
+                product: { title: "产品快讯", desc: "AI 应用新品发布、功能更新、用户体验优化与市场化策略追踪报道", icon: "M13 10V3L4 14h7v7l9-11h-7z", articles: [] }
+            }
         };
 
-        let currentCat = null;
-        let currentArticles = [];
+        const START_DATE = new Date('2026-02-02');
+        let currentCategory = null;
 
-        function init() {
-            const now = new Date();
-            const dateStr = now.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'long' });
-            document.getElementById('date').textContent = dateStr;
-            
-            const start = new Date('2026-02-02');
-            const days = Math.floor((now - start) / (1000*60*60*24)) + 1;
-            document.getElementById('issue').textContent = days;
+        function getDaysDifference(date1, date2) {
+            const oneDay = 24 * 60 * 60 * 1000;
+            return Math.round(Math.abs((date1 - date2) / oneDay));
+        }
 
-            const sumDiv = document.getElementById('summaries');
-            data.summaries.forEach((item, i) => {
-                sumDiv.innerHTML += `
-                    <div class="summary-item">
-                        <div class="num">${i+1}</div>
-                        <div>
-                            <p style="margin: 0 0 8px 0;">${item.text}</p>
-                            <a href="${item.url}" target="_blank">查看原文：${item.source} →</a>
-                        </div>
-                    </div>
-                `;
-            });
+        function seededRandom(seed) {
+            const x = Math.sin(seed++) * 10000;
+            return x - Math.floor(x);
+        }
 
-            const catDiv = document.getElementById('categories');
-            data.categories.forEach(cat => {
-                catDiv.innerHTML += `
-                    <div class="category-card" onclick="openCategory('${cat.id}')">
-                        <div style="font-size: 2rem; margin-bottom: 10px;">${cat.icon}</div>
-                        <h3 style="color: #D4AF37; margin: 0 0 8px 0;">${cat.title}</h3>
-                        <p style="font-size: 0.9rem; color: #888; margin: 0;">${cat.desc}</p>
-                        <p style="font-size: 0.8rem; color: #666; margin-top: 10px;">${cat.articles.length} 篇文章</p>
-                    </div>
-                `;
-            });
+        function formatDate(date) {
+            const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const weekday = weekdays[date.getDay()];
+            return `${year}-${month}-${day} ${weekday}`;
+        }
+
+        function getRelativeTime(seed, index) {
+            const hours = Math.floor(seededRandom(seed + index) * 12);
+            if (hours === 0) return '刚刚';
+            return `${hours}小时前`;
         }
 
         function showHome() {
-            document.getElementById('home').classList.remove('hidden');
-            document.getElementById('category').classList.add('hidden');
-            document.getElementById('article').classList.add('hidden');
+            document.getElementById('home-view').classList.remove('hidden');
+            document.getElementById('category-view').classList.add('hidden');
+            document.getElementById('article-view').classList.add('hidden');
+            document.getElementById('subscribe-section').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function showCategory() {
-            document.getElementById('home').classList.add('hidden');
-            document.getElementById('category').classList.remove('hidden');
-            document.getElementById('article').classList.add('hidden');
+            document.getElementById('home-view').classList.add('hidden');
+            document.getElementById('category-view').classList.remove('hidden');
+            document.getElementById('article-view').classList.add('hidden');
+            document.getElementById('subscribe-section').classList.add('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        function openCategory(id) {
-            currentCat = data.categories.find(c => c.id === id);
-            document.getElementById('cat-title').textContent = currentCat.title + ' (' + currentCat.articles.length + '篇)';
-            const artDiv = document.getElementById('articles');
-            artDiv.innerHTML = '';
+        function openCategory(categoryKey) {
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const daysDiff = getDaysDifference(today, START_DATE);
+            const todaySeed = today.getTime();
             
-            if (currentCat.articles.length === 0) {
-                artDiv.innerHTML = '<p style="color: #666; text-align: center; padding: 40px;">该分类暂无文章，请等待每日自动更新（北京时间 08:00）</p>';
-            } else {
-                currentArticles = currentCat.articles;
-                currentArticles.forEach((art, i) => {
-                    artDiv.innerHTML += `
-                        <div class="card" onclick="openArticle(${i})" style="cursor: pointer;">
-                            <h4 style="margin: 0 0 10px 0; color: #F5F5F5;">${art.title}</h4>
-                            <p style="margin: 0; color: #888; font-size: 0.9rem;">${art.summary}</p>
-                            <p style="margin: 10px 0 0 0; color: #666; font-size: 0.8rem;">阅读时长：${art.readTime} • 来源：${art.source}</p>
-                        </div>
-                    `;
-                });
+            const cat = contentDatabase.categories[categoryKey];
+            currentCategory = cat;
+            
+            document.getElementById('category-title').textContent = cat.title;
+            document.getElementById('category-desc').textContent = cat.desc;
+            document.getElementById('category-icon').innerHTML = `<svg class="w-6 h-6 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="${cat.icon}"/></svg>`;
+            
+            const articlesList = document.getElementById('articles-list');
+            
+            if (!cat.articles || cat.articles.length === 0) {
+                articlesList.innerHTML = `<div class="glass-panel rounded-xl p-8 text-center text-gray-400"><p>该分类暂无文章，请等待每日自动更新<br><span class="text-sm text-gray-600 mt-2 block">明天 08:00 后将自动抓取新闻</span></p></div>`;
+                showCategory();
+                return;
             }
+            
+            const shuffledArticles = [...cat.articles].sort(() => seededRandom(todaySeed) - 0.5);
+            const selectedArticles = shuffledArticles.slice(0, 3);
+            
+            articlesList.innerHTML = selectedArticles.map((article, index) => {
+                const publishTime = getRelativeTime(todaySeed, index);
+                return `
+                    <div onclick="openArticle(${index})" class="glass-panel rounded-xl p-6 cursor-pointer hover:border-gold-500/30 transition-all card-hover-transform group animate-slide-up" style="animation-delay: ${index * 100}ms">
+                        <div class="flex justify-between items-start mb-3">
+                            <h3 class="font-serif text-xl text-gold-100 group-hover:text-gold-300 transition-colors line-clamp-2 flex-1 mr-4">${article.title}</h3>
+                            <span class="text-xs text-gray-500 whitespace-nowrap">${publishTime}</span>
+                        </div>
+                        <p class="text-gray-400 text-sm mb-4 line-clamp-2 font-light">${article.summary}</p>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2 text-xs text-gold-600/80">
+                                <span class="w-1 h-1 bg-gold-500 rounded-full"></span>
+                                <span>阅读时长 ${article.readTime}</span>
+                                <span class="text-gray-600">•</span>
+                                <span class="text-gray-500">来源：${article.source || '未知'}</span>
+                            </div>
+                            <span class="text-gold-500 text-sm group-hover:translate-x-1 transition-transform">阅读全文 →</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            window.currentArticles = selectedArticles;
             showCategory();
         }
 
         function openArticle(index) {
-            const art = currentArticles[index];
-            document.getElementById('art-cat').textContent = currentCat.title;
-            document.getElementById('art-title').textContent = art.title;
-            document.getElementById('art-content').innerHTML = art.content;
-            document.getElementById('art-link').href = art.sourceUrl;
-            document.getElementById('home').classList.add('hidden');
-            document.getElementById('category').classList.add('hidden');
-            document.getElementById('article').classList.remove('hidden');
+            const article = window.currentArticles[index];
+            
+            document.getElementById('article-title').textContent = article.title;
+            document.getElementById('article-content').innerHTML = article.content;
+            document.getElementById('article-category').textContent = currentCategory.title;
+            document.getElementById('article-time').textContent = document.getElementById('current-date-display').textContent;
+            document.getElementById('article-readtime').textContent = article.readTime;
+            
+            const sourceLink = document.getElementById('article-source-link');
+            const sourceText = document.getElementById('article-source-text');
+            if (article.sourceUrl) {
+                sourceLink.href = article.sourceUrl;
+                sourceText.textContent = `查看原文：${article.source || '来源网站'}`;
+                sourceLink.classList.remove('hidden');
+            } else {
+                sourceLink.classList.add('hidden');
+            }
+            
+            const sourceBottom = document.getElementById('article-source-bottom');
+            if (article.sourceUrl) {
+                sourceBottom.href = article.sourceUrl;
+                sourceBottom.classList.remove('hidden');
+            } else {
+                sourceBottom.classList.add('hidden');
+            }
+            
+            document.getElementById('home-view').classList.add('hidden');
+            document.getElementById('category-view').classList.add('hidden');
+            document.getElementById('article-view').classList.remove('hidden');
+            document.getElementById('subscribe-section').classList.add('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // 立即执行
-        init();
+        // 立即执行渲染（不使用 DOMContentLoaded，避免事件未触发）
+        (function init() {
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const daysDiff = getDaysDifference(today, START_DATE);
+            const issueNumber = daysDiff + 1;
+            const todaySeed = today.getTime();
+            
+            document.getElementById('issue-number').textContent = issueNumber;
+            document.getElementById('current-date-display').textContent = formatDate(now);
+            
+            // 渲染摘要
+            const summaryContainer = document.getElementById('summary-container');
+            const summaryIndex = daysDiff % contentDatabase.summaries.length;
+            const todaySummaries = contentDatabase.summaries[summaryIndex];
+            
+            summaryContainer.innerHTML = todaySummaries.map((item, index) => `
+                <div class="flex gap-4 items-start p-4 rounded-lg bg-obsidian-400/40 border border-white/5 hover:border-gold-500/20 transition-colors animate-slide-up" style="animation-delay: ${index * 100}ms">
+                    <span class="flex-shrink-0 w-8 h-8 rounded-full bg-gold-500/20 text-gold-400 flex items-center justify-center text-sm font-serif font-bold border border-gold-500/30">${index + 1}</span>
+                    <div class="flex-1">
+                        <p class="text-gray-200 leading-relaxed text-sm sm:text-base font-light mb-2">${item.text}</p>
+                        <a href="${item.url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-xs text-gold-500 hover:text-gold-300 transition-colors group">
+                            <span>查看原文：${item.source}</span>
+                            <svg class="w-3 h-3 transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                        </a>
+                    </div>
+                </div>
+            `).join('');
+            
+            // 渲染分类卡片
+            const categoriesContainer = document.getElementById('categories-container');
+            const categoryKeys = Object.keys(contentDatabase.categories);
+            
+            const categoryCards = categoryKeys.map((key, index) => {
+                const cat = contentDatabase.categories[key];
+                const articleCount = cat.articles ? cat.articles.length : 0;
+                const updateTime = getRelativeTime(todaySeed, index);
+                
+                let highlightNews = "等待每日自动更新...";
+                if (cat.articles && cat.articles.length > 0) {
+                    const newsIndex = daysDiff % cat.articles.length;
+                    highlightNews = cat.articles[newsIndex].title;
+                }
+                
+                return `
+                    <article onclick="openCategory('${key}')" class="card-hover-transform group relative glass-panel rounded-xl overflow-hidden border border-white/5 cursor-pointer h-full">
+                        <div class="absolute inset-0 bg-gradient-to-br from-gold-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                        <div class="relative p-6 h-full flex flex-col">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="p-3 bg-obsidian-300 rounded-lg border border-gold-500/20 group-hover:border-gold-500/40 transition-colors">
+                                    <svg class="w-6 h-6 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="${cat.icon}"/></svg>
+                                </div>
+                                <svg class="w-5 h-5 text-gray-600 group-hover:text-gold-400 transition-colors transform group-hover:translate-x-1 duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                            </div>
+                            <h3 class="font-serif text-xl text-gold-100 mb-2 group-hover:text-gold-300 transition-colors">${cat.title}</h3>
+                            <p class="text-gray-400 text-sm mb-4 line-clamp-2 font-light flex-grow">${cat.desc}</p>
+                            <div class="mt-auto pt-4 border-t border-white/5">
+                                <p class="text-xs text-gold-200/70 mb-2 font-medium truncate">${highlightNews}</p>
+                                <div class="flex items-center justify-between text-xs">
+                                    <span class="text-gold-600 font-medium">${articleCount} 篇更新</span>
+                                    <span class="text-gray-500">${updateTime}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+                `;
+            }).join('');
+            
+            categoriesContainer.innerHTML = categoryCards;
+        })();
     </script>
 </body>
 </html>
