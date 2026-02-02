@@ -11,95 +11,124 @@ import html
 NEWS_API_KEY = os.getenv('NEWS_API_KEY')
 API_URL = 'https://newsapi.org/v2/everything'
 
+# 繁体/非科技媒体黑名单（排除这些域名）
+BLOCKED_DOMAINS = [
+    'tw.news.yahoo.com', 'yahoo.com.tw', 'technews.tw', 'techbang.com', 
+    'hk01.com', 'setn.com', 'ettoday.net', 'chinatimes.com', 'udn.com',
+    'tvb.com', 'mingpao.com', 'scmp.com', 'bbc.com/zhongwen'
+]
+
+# 内容质量黑名单（排除这些明显不相关的主题）
+BLOCKED_KEYWORDS = [
+    '假冒', '诈骗', '骗局', '色情', '娱乐', '八卦', '出轨', '离婚', 
+    '恋爱', '综艺', '明星', '网红', '加拿大男子', '飞机师'
+]
+
+def is_valid_news(title, desc, url):
+    """检查新闻是否真正与AI相关且不是垃圾内容"""
+    text = (title + ' ' + desc).lower()
+    
+    # 1. 排除黑名单域名
+    for domain in BLOCKED_DOMAINS:
+        if domain in url.lower():
+            print(f"Blocked domain: {domain} - {title[:30]}...")
+            return False
+    
+    # 2. 排除黑名单关键词
+    for keyword in BLOCKED_KEYWORDS:
+        if keyword in text:
+            print(f"Blocked keyword '{keyword}': {title[:30]}...")
+            return False
+    
+    # 3. 确保标题中包含AI相关关键词（强相关检查）
+    ai_keywords = ['ai', '人工智能', 'chatgpt', 'openai', '大模型', 'llm', 
+                   'gpt', 'claude', 'gemini', '文心一言', '通义千问', 'kimi',
+                   '算力', '芯片', 'nvidia', '英伟达', '微软', 'google', 'anthropic',
+                   '深度学习', '机器学习', '神经网络', '算法', '自动驾驶', '机器人']
+    
+    title_lower = title.lower()
+    has_ai_keyword = any(kw in title_lower for kw in ai_keywords)
+    
+    if not has_ai_keyword:
+        print(f"Skipped (no AI keyword in title): {title[:40]}...")
+        return False
+    
+    return True
+
 def fetch_news():
-    """从 NewsAPI 抓取中文 AI 新闻"""
+    """从 NewsAPI 抓取高质量中文 AI 新闻"""
     if not NEWS_API_KEY:
         print("Error: NEWS_API_KEY not found")
         return []
     
-    # 搜索参数（中文 AI 相关）
-    params = {
-        'q': '人工智能 OR AI OR 大模型 OR ChatGPT OR OpenAI',
-        'language': 'zh',
-        'sortBy': 'publishedAt',
-        'pageSize': 30,
-        'apiKey': NEWS_API_KEY
-    }
+    # 优化搜索参数：更精确的AI关键词，排除娱乐八卦
+    search_queries = [
+        '人工智能 AND (技术 OR 科技 OR 发布 OR 推出 OR 模型)',
+        'ChatGPT OR OpenAI OR Claude OR Gemini',
+        '大模型 OR LLM OR 算力 OR NVIDIA OR 英伟达',
+        'AI芯片 OR 自动驾驶 OR 机器人 OR 深度学习'
+    ]
     
-    try:
-        print("Fetching news from NewsAPI (Chinese)...")
-        response = requests.get(API_URL, params=params, timeout=30)
-        data = response.json()
-        
-        if data.get('status') != 'ok':
-            print(f"API Error: {data.get('message')}")
-            return fetch_news_english()
-        
-        articles = data.get('articles', [])
-        print(f"Fetched {len(articles)} articles")
-        
-        entries = []
-        for article in articles:
-            title = html.unescape(article.get('title', ''))
-            description = html.unescape(article.get('description', '') or article.get('content', '')[:200])
-            clean_desc = re.sub('<.*?>', '', description)
-            
-            if title and clean_desc:
-                entries.append({
-                    'title': title,
-                    'summary': clean_desc[:200] + '...' if len(clean_desc) > 200 else clean_desc,
-                    'link': article.get('url', ''),
-                    'source': article.get('source', {}).get('name', 'NewsAPI'),
-                })
-        
-        return entries
-        
-    except Exception as e:
-        print(f"Error: {e}")
-        return fetch_news_english()
-
-def fetch_news_english():
-    """备用：获取英文 AI 新闻"""
-    try:
+    all_entries = []
+    
+    for query in search_queries:
         params = {
-            'q': 'artificial intelligence OR AI OR ChatGPT',
-            'language': 'en',
+            'q': query,
+            'language': 'zh',
             'sortBy': 'publishedAt',
             'pageSize': 20,
             'apiKey': NEWS_API_KEY
         }
         
-        response = requests.get(API_URL, params=params, timeout=30)
-        data = response.json()
-        articles = data.get('articles', [])
-        
-        entries = []
-        for article in articles:
-            title = html.unescape(article.get('title', ''))
-            description = html.unescape(article.get('description', '') or '')
-            clean_desc = re.sub('<.*?>', '', description)
+        try:
+            print(f"Fetching: {query}...")
+            response = requests.get(API_URL, params=params, timeout=30)
+            data = response.json()
             
-            if title:
-                entries.append({
-                    'title': title,
-                    'summary': clean_desc[:200] + '...' if len(clean_desc) > 200 else clean_desc,
-                    'link': article.get('url', ''),
-                    'source': article.get('source', {}).get('name', 'NewsAPI'),
-                })
-        
-        return entries
-    except:
-        return []
+            if data.get('status') != 'ok':
+                print(f"API Error: {data.get('message')}")
+                continue
+            
+            articles = data.get('articles', [])
+            
+            for article in articles:
+                title = html.unescape(article.get('title', ''))
+                description = html.unescape(article.get('description', '') or article.get('content', '')[:300])
+                clean_desc = re.sub('<.*?>', '', description)
+                url = article.get('url', '')
+                
+                # 严格过滤
+                if title and clean_desc and is_valid_news(title, clean_desc, url):
+                    all_entries.append({
+                        'title': title,
+                        'summary': clean_desc[:180] + '...' if len(clean_desc) > 180 else clean_desc,
+                        'link': url,
+                        'source': article.get('source', {}).get('name', 'NewsAPI'),
+                    })
+            
+        except Exception as e:
+            print(f"Error fetching query '{query}': {e}")
+            continue
+    
+    # 去重并按时间排序
+    seen = set()
+    unique_entries = []
+    for entry in all_entries:
+        if entry['link'] not in seen:
+            seen.add(entry['link'])
+            unique_entries.append(entry)
+    
+    print(f"Total valid unique articles: {len(unique_entries)}")
+    return unique_entries[:30]  # 最多30条
 
 def categorize_and_generate(entries):
     """生成内容数据"""
     if not entries:
+        print("Warning: No entries found!")
         return {
             'summaries': [[]],
             'categories': {}
         }
-    
-    random.shuffle(entries)
     
     # 前3条作为核心摘要
     top3 = entries[:3]
@@ -111,14 +140,14 @@ def categorize_and_generate(entries):
             'url': item['link']
         })
     
-    # 分类关键词
+    # 分类关键词（更精确）
     CATEGORY_KEYWORDS = {
-        'bigModel': ['GPT', 'ChatGPT', 'OpenAI', 'Claude', 'Llama', '大模型', 'LLM', 'Gemini', '文心', '通义', 'Kimi'],
-        'hardware': ['芯片', 'NVIDIA', 'GPU', '算力', '服务器', '推理', '训练', 'hardware', 'chip', 'robot', '机器人'],
-        'global': ['出海', 'global', 'policy', '政策', 'regulation', '监管', 'EU', 'European', '美国', '中国'],
-        'investment': ['融资', 'investment', 'funding', 'IPO', '估值', '独角兽', 'billion', 'million', '投资'],
-        'industry': ['报告', 'report', '分析', '行业', 'study', 'research', 'Gartner', 'market'],
-        'product': ['发布', 'launch', 'product', '应用', 'app', 'update', 'version', '新功能', '新品']
+        'bigModel': ['GPT', 'ChatGPT', 'OpenAI', 'Claude', 'Llama', '大模型', 'LLM', 'Gemini', '文心', '通义', 'Kimi', 'Mistral', 'Anthropic'],
+        'hardware': ['芯片', 'NVIDIA', 'GPU', '算力', '服务器', '推理', '训练', 'chip', 'robot', '机器人', '自动驾驶', 'tesla', '半导体'],
+        'global': ['出海', 'global', 'policy', '政策', 'regulation', '监管', 'EU', 'European', '美国', '中国', '工信部', '网信办'],
+        'investment': ['融资', 'investment', 'funding', 'IPO', '估值', '独角兽', 'billion', 'million', '投资', '收购', '并购'],
+        'industry': ['报告', 'report', '分析', '行业', 'Gartner', 'market', '趋势', '研究'],
+        'product': ['发布', 'launch', 'product', '应用', 'app', 'update', 'version', '新功能', '新品', '上线', '推出']
     }
     
     categories = {
