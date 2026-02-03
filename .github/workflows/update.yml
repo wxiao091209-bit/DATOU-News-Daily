@@ -25,7 +25,7 @@ jobs:
         
     - name: Install dependencies
       run: |
-        pip install feedparser requests beautifulsoup4
+        pip install feedparser requests beautifulsoup4 deep_translator
         
     - name: Fetch latest news and update HTML
       env:
