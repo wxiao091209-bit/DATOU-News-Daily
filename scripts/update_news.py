@@ -75,7 +75,7 @@ def fetch_news():
         return []
     
     # 关键修复：获取最近24小时的新闻
-    yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+    yesterday = (datetime.now() - timedelta(days=2)).strftime('%Y-%m-%d')
     today = datetime.now().strftime('%Y-%m-%d')
     
     search_queries = [
@@ -92,7 +92,7 @@ def fetch_news():
             'q': query,
             'language': 'zh',
             'sortBy': 'publishedAt',
-            'pageSize': 20,
+            'pageSize': 30,
             'from': yesterday,  # 关键：只获取最近24小时
             'to': today,
             'apiKey': NEWS_API_KEY
