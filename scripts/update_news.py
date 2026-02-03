@@ -3,7 +3,7 @@ import os
 import requests
 import re
 import random
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 import html
 
@@ -11,56 +11,56 @@ import html
 NEWS_API_KEY = os.getenv('NEWS_API_KEY')
 API_URL = 'https://newsapi.org/v2/everything'
 
-# 繁体/非科技媒体黑名单（排除这些域名）
+# 繁体/非科技媒体黑名单
 BLOCKED_DOMAINS = [
     'tw.news.yahoo.com', 'yahoo.com.tw', 'technews.tw', 
     'techbang.com', 'hk01.com', 'setn.com', 'ettoday.net', 
     'chinatimes.com', 'udn.com', 'tvb.com', 'mingpao.com', 
-    'scmp.com', 'bbc.com/zhongwen'
+    'scmp.com', 'bbc.com/zhongwen', 'cool3c.com', 'inside.com.tw'
 ]
 
-# 内容质量黑名单（排除这些明显不相关的主题）
+# 内容质量黑名单
 BLOCKED_KEYWORDS = [
     '假冒', '诈骗', '骗局', '色情', '娱乐', '八卦', 
-    '出轨', '离婚', '恋爱', '综艺', '明星', '网红'
+    '出轨', '离婚', '恋爱', '综艺', '明星', '网红', '阿富汗'
 ]
 
-def clean_strings(obj):
-    """递归清理字符串中的换行符，防止 JavaScript 语法错误"""
-    if isinstance(obj, str):
-        # 将换行符、回车符、制表符替换为空格
-        return obj.replace('\n', ' ').replace('\r', ' ').replace('\t', ' ')
-    elif isinstance(obj, dict):
-        return {k: clean_strings(v) for k, v in obj.items()}
-    elif isinstance(obj, list):
-        return [clean_strings(item) for item in obj]
-    return obj
+def clean_text(text):
+    """清理文本，移除换行符和多余空格"""
+    if not text:
+        return ""
+    # 移除 HTML 标签
+    text = re.sub('<.*?>', '', text)
+    # 替换换行符、制表符、多余空格
+    text = text.replace('\n', ' ').replace('\r', ' ').replace('\t', ' ')
+    text = ' '.join(text.split())  # 合并多个空格
+    return text.strip()
 
 def is_valid_news(title, desc, url):
-    """检查新闻是否真正与AI相关且不是垃圾内容"""
+    """检查新闻是否真正与AI相关"""
     if not title or not desc:
         return False
         
     text = (title + ' ' + desc).lower()
     url_lower = url.lower()
     
-    # 1. 排除黑名单域名（繁体网站）
+    # 排除黑名单域名
     for domain in BLOCKED_DOMAINS:
         if domain in url_lower:
             return False
     
-    # 2. 排除黑名单关键词
+    # 排除黑名单关键词
     for keyword in BLOCKED_KEYWORDS:
         if keyword in text:
             return False
     
-    # 3. 确保标题中包含AI相关关键词（强相关检查）
+    # 确保包含AI关键词
     ai_keywords = [
         'ai', '人工智能', 'chatgpt', 'openai', '大模型', 'llm', 
         'gpt', 'claude', 'gemini', '文心', '通义', 'kimi',
         '算力', '芯片', 'nvidia', '英伟达', '微软', 'google', 
         'anthropic', '深度学习', '机器学习', '神经网络', 
-        '算法', '自动驾驶', '机器人', '科技'
+        '算法', '自动驾驶', '机器人', '科技', 'copilot'
     ]
     
     title_lower = title.lower()
@@ -69,17 +69,20 @@ def is_valid_news(title, desc, url):
     return has_ai_keyword
 
 def fetch_news():
-    """从 NewsAPI 抓取高质量中文 AI 新闻"""
+    """从 NewsAPI 抓取最近24小时的中文 AI 新闻"""
     if not NEWS_API_KEY:
         print("Error: NEWS_API_KEY not found")
         return []
     
-    # 优化搜索参数：更精确的AI关键词
+    # 关键修复：获取最近24小时的新闻
+    yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+    today = datetime.now().strftime('%Y-%m-%d')
+    
     search_queries = [
         '人工智能 AND (技术 OR 科技 OR 发布 OR 推出)',
         'ChatGPT OR OpenAI OR Claude OR Gemini',
         '大模型 OR LLM OR 算力 OR NVIDIA',
-        'AI芯片 OR 自动驾驶 OR 机器人'
+        'AI芯片 OR 自动驾驶 OR 机器人 OR 微软 Copilot'
     ]
     
     all_entries = []
@@ -89,7 +92,9 @@ def fetch_news():
             'q': query,
             'language': 'zh',
             'sortBy': 'publishedAt',
-            'pageSize': 15,
+            'pageSize': 20,
+            'from': yesterday,  # 关键：只获取最近24小时
+            'to': today,
             'apiKey': NEWS_API_KEY
         }
         
@@ -103,27 +108,35 @@ def fetch_news():
                 continue
             
             articles = data.get('articles', [])
+            print(f"  Found {len(articles)} articles")
             
             for article in articles:
                 title = html.unescape(article.get('title', ''))
-                description = html.unescape(article.get('description', '') or article.get('content', '')[:300])
-                clean_desc = re.sub('<.*?>', '', description)
+                description = html.unescape(article.get('description', '') or '')
+                content = html.unescape(article.get('content', '') or '')
+                
+                # 优先使用 description，如果为空使用 content 前300字符
+                full_text = description if description else content[:300]
+                clean_desc = clean_text(full_text)
+                
                 url = article.get('url', '')
+                published = article.get('publishedAt', '')[:10]  # YYYY-MM-DD
                 
                 # 严格过滤
                 if title and clean_desc and is_valid_news(title, clean_desc, url):
                     all_entries.append({
-                        'title': title,
-                        'summary': clean_desc[:180] + '...' if len(clean_desc) > 180 else clean_desc,
+                        'title': clean_text(title),
+                        'summary': clean_desc[:200] + '...' if len(clean_desc) > 200 else clean_desc,
                         'link': url,
                         'source': article.get('source', {}).get('name', 'NewsAPI'),
+                        'date': published
                     })
             
         except Exception as e:
             print(f"Error fetching query '{query}': {e}")
             continue
     
-    # 去重并按时间排序
+    # 去重
     seen = set()
     unique_entries = []
     for entry in all_entries:
@@ -131,13 +144,20 @@ def fetch_news():
             seen.add(entry['link'])
             unique_entries.append(entry)
     
+    # 按日期排序，最新的在前
+    unique_entries.sort(key=lambda x: x['date'], reverse=True)
+    
     print(f"Total valid unique articles: {len(unique_entries)}")
-    return unique_entries[:20]  # 最多20条
+    for e in unique_entries[:5]:
+        print(f"  - [{e['date']}] {e['title'][:40]}...")
+    
+    return unique_entries[:20]
 
 def categorize_and_generate(entries):
     """生成内容数据"""
     if not entries:
         print("Warning: No entries found!")
+        # 返回空结构，避免页面报错
         return {
             'summaries': [[]],
             'categories': {}
@@ -155,12 +175,12 @@ def categorize_and_generate(entries):
     
     # 分类关键词
     CATEGORY_KEYWORDS = {
-        'bigModel': ['GPT', 'ChatGPT', 'OpenAI', 'Claude', 'Llama', '大模型', 'LLM', 'Gemini', '文心', '通义', 'Kimi'],
-        'hardware': ['芯片', 'NVIDIA', 'GPU', '算力', '服务器', '推理', '训练', 'chip', 'robot', '机器人', '自动驾驶', 'tesla'],
-        'global': ['出海', 'global', 'policy', '政策', 'regulation', '监管', 'EU', 'European', '美国', '中国'],
-        'investment': ['融资', 'investment', 'funding', 'IPO', '估值', '独角兽', 'billion', 'million', '投资', '收购'],
-        'industry': ['报告', 'report', '分析', '行业', 'Gartner', 'market', '趋势', '研究'],
-        'product': ['发布', 'launch', 'product', '应用', 'app', 'update', 'version', '新功能', '新品', '上线']
+        'bigModel': ['GPT', 'ChatGPT', 'OpenAI', 'Claude', 'Llama', '大模型', 'LLM', 'Gemini', '文心', '通义', 'Kimi', 'DeepSeek'],
+        'hardware': ['芯片', 'NVIDIA', 'GPU', '算力', '服务器', '推理', '训练', 'chip', 'robot', '机器人', '自动驾驶', 'tesla', '硬件'],
+        'global': ['出海', 'global', 'policy', '政策', 'regulation', '监管', 'EU', 'European', '美国', '中国', '国际'],
+        'investment': ['融资', 'investment', 'funding', 'IPO', '估值', '独角兽', 'billion', 'million', '投资', '收购', '并购'],
+        'industry': ['报告', 'report', '分析', '行业', 'Gartner', 'market', '趋势', '研究', '市场', '产业'],
+        'product': ['发布', 'launch', 'product', '应用', 'app', 'update', 'version', '新功能', '新品', '上线', 'copilot']
     }
     
     categories = {
@@ -175,6 +195,7 @@ def categorize_and_generate(entries):
     # 分配文章到分类
     for item in entries[3:]:
         text = (item['title'] + ' ' + item['summary']).lower()
+        assigned = False
         
         for cat_key, keywords in CATEGORY_KEYWORDS.items():
             if any(keyword.lower() in text for keyword in keywords):
@@ -186,7 +207,19 @@ def categorize_and_generate(entries):
                     'source': item['source'],
                     'sourceUrl': item['link']
                 })
+                assigned = True
                 break
+        
+        # 如果没匹配到任何分类，放入 product
+        if not assigned:
+            categories['product']['articles'].append({
+                'title': item['title'],
+                'summary': item['summary'],
+                'content': f"<p>{item['summary']}</p><p><a href='{item['link']}' target='_blank'>查看原文：{item['source']}</a></p>",
+                'readTime': f"{random.randint(3, 8)} 分钟",
+                'source': item['source'],
+                'sourceUrl': item['link']
+            })
     
     return {
         'summaries': [summaries],
@@ -194,33 +227,45 @@ def categorize_and_generate(entries):
     }
 
 def update_html():
-    """更新 HTML 文件"""
+    """更新 HTML 文件 - 使用可靠的标记替换法"""
     entries = fetch_news()
     content = categorize_and_generate(entries)
-    
-    # 清理所有字符串中的换行符（关键修复！）
-    content = clean_strings(content)
     
     with open('index.html', 'r', encoding='utf-8') as f:
         html_content = f.read()
     
-    # 生成单行 JSON，确保 JavaScript 不会报错
+    # 生成 JSON，确保 ASCII 编码正确处理中文
     new_json = json.dumps(content, ensure_ascii=False, separators=(',', ':'))
     
-    # 替换 HTML 中的 contentDatabase
-    pattern = r'const contentDatabase\s*=\s*\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}\s*;'
-    new_html = re.sub(pattern, f'const contentDatabase = {new_json};', html_content)
+    # 关键修复：使用标记替换法，而不是复杂的正则
+    # 在 HTML 中找到 contentDatabase 的开始和结束
+    start_marker = 'const contentDatabase = '
+    end_marker = ';\n\n        const START_DATE'
     
-    # 如果正则没匹配到，尝试更宽松的匹配
-    if new_html == html_content:
-        print("Warning: Pattern not found, trying alternative...")
-        alt_pattern = r'(const contentDatabase\s*=\s*)\{[\s\S]*?\}(\s*;)'
-        new_html = re.sub(alt_pattern, r'\g<1>' + new_json + r'\g<2>', html_content)
+    start_idx = html_content.find(start_marker)
+    end_idx = html_content.find(end_marker)
+    
+    if start_idx == -1 or end_idx == -1:
+        print("Error: Could not find contentDatabase markers")
+        # 尝试备用方案
+        alt_end = html_content.find(';\n\n        let currentCategory')
+        if start_idx != -1 and alt_end != -1:
+            end_idx = alt_end
+        else:
+            print("Failed to update HTML - markers not found")
+            return
+    
+    # 构建新的 HTML
+    new_html = (
+        html_content[:start_idx + len(start_marker)] + 
+        new_json + 
+        html_content[end_idx:]
+    )
     
     with open('index.html', 'w', encoding='utf-8') as f:
         f.write(new_html)
     
-    print(f"Updated HTML with {len(entries)} articles at {datetime.now()}")
+    print(f"✅ Successfully updated HTML with {len(entries)} articles at {datetime.now()}")
 
 if __name__ == '__main__':
     update_html()
