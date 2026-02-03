@@ -10,19 +10,63 @@ import feedparser
 import requests
 from bs4 import BeautifulSoup
 
-def force_translate(text):
-    """强制翻译英文标题/摘要为中文"""
+# 尝试导入翻译库，如果没有则使用增强字典
+try:
+    from deep_translator import GoogleTranslator
+    TRANSLATOR_AVAILABLE = True
+    translator = GoogleTranslator(source='auto', target='zh-CN')
+except ImportError:
+    TRANSLATOR_AVAILABLE = False
+    print("注意：未安装 deep_translator，使用本地字典翻译")
+
+def smart_translate(text, max_chars=150):
+    """智能翻译：先尝试API，失败用字典"""
     if not text:
         return "暂无内容"
     
-    # 如果已经有足够多中文，直接返回
+    # 如果已有足够中文，直接返回
     chinese_chars = len([c for c in text if '\u4e00' <= c <= '\u9fff'])
-    if chinese_chars > len(text) * 0.3:
-        return text
+    if chinese_chars > len(text) * 0.4:
+        return text[:max_chars]
     
-    # 英中映射表（按长度降序，避免短词覆盖）
+    # 方法1：使用Google Translate API（免费）
+    if TRANSLATOR_AVAILABLE:
+        try:
+            # 分段翻译（API有长度限制）
+            if len(text) > 4000:
+                text = text[:4000]
+            translated = translator.translate(text)
+            return translated[:max_chars]
+        except Exception as e:
+            print(f"API翻译失败: {e}，使用字典翻译")
+    
+    # 方法2：增强字典翻译（备用）
+    return enhanced_dict_translate(text, max_chars)
+
+def enhanced_dict_translate(text, max_chars=150):
+    """增强版字典翻译，覆盖更多词汇"""
+    if not text:
+        return "暂无内容"
+    
+    # 扩展的翻译字典
     translations = [
-        # 公司和产品
+        # 基础词汇（按长度降序）
+        ("artificial intelligence", "人工智能"),
+        ("machine learning", "机器学习"),
+        ("large language model", "大语言模型"),
+        ("command center", "指挥中心"),
+        ("software development", "软件开发"),
+        ("enterprise data", "企业级数据"),
+        ("frontier intelligence", "前沿智能"),
+        ("AI agents", "AI智能体"),
+        ("AI agent", "AI智能体"),
+        ("data agent", "数据智能体"),
+        ("in-house", "自研"),
+        ("most valuable", "最有价值的"),
+        ("private company", "私营公司"),
+        ("weekly newsletter", "每周通讯"),
+        
+        # 公司/产品
         ("OpenAI", "OpenAI"),
         ("Anthropic", "Anthropic"),
         ("Claude", "Claude"),
@@ -36,71 +80,104 @@ def force_translate(text):
         ("Microsoft", "微软"),
         ("Amazon", "亚马逊"),
         ("Snowflake", "Snowflake"),
+        ("TechCrunch", "TechCrunch"),
+        ("Musk", "马斯克"),
         ("xAI", "xAI"),
-        ("Mistral", "Mistral"),
-        ("Hugging Face", "Hugging Face"),
-        
-        # 技术和产品
         ("Codex", "Codex"),
-        ("ChatGPT", "ChatGPT"),
-        ("AI agent", "AI智能体"),
-        ("AI agents", "AI智能体"),
-        ("artificial intelligence", "人工智能"),
-        ("machine learning", "机器学习"),
-        ("large language model", "大语言模型"),
-        ("LLM", "大模型"),
-        ("multimodal", "多模态"),
-        ("infrastructure", "基础设施"),
-        ("enterprise", "企业级"),
-        ("dataset", "数据集"),
-        ("training", "训练"),
-        ("inference", "推理"),
-        ("chip", "芯片"),
-        ("GPU", "GPU"),
-        ("robotics", "机器人技术"),
         
-        # 动作和商业
-        ("partnership", "合作"),
+        # 动词
         ("partner", "合作"),
+        ("partnership", "合作"),
+        ("introducing", "推出"),
+        ("introduces", "推出"),
+        ("announce", "宣布"),
+        ("announcing", "宣布"),
+        ("launch", "发布"),
+        ("launches", "发布"),
+        ("release", "发布"),
+        ("update", "更新"),
+        ("bring", "引入"),
+        ("enable", "使能够"),
+        ("enabling", "使"),
+        ("creates", "创建"),
+        ("create", "创建"),
+        ("built", "构建"),
+        ("build", "构建"),
+        ("appeared", "发表于"),
+        ("appear", "出现"),
+        ("paves", "铺平"),
+        ("pave", "铺平"),
+        ("prove", "证明"),
+        ("try", "尝试"),
+        ("get", "获取"),
+        
+        # 名词
+        ("merger", "合并"),
         ("agreement", "协议"),
         ("investment", "投资"),
         ("funding", "融资"),
-        ("billion", "十亿美元"),
-        ("million", "百万美元"),
-        ("launch", "发布"),
-        ("introducing", "推出"),
-        ("announce", "宣布"),
-        ("release", "发布"),
-        ("update", "更新"),
-        ("available", "上线"),
-        ("built", "构建"),
-        ("bring", "引入"),
-        
-        # 描述词
-        ("frontier", "前沿"),
+        ("company", "公司"),
+        ("business", "业务"),
+        ("story", "报道"),
+        ("algorithm", "算法"),
+        ("newsletter", "通讯"),
+        ("inbox", "收件箱"),
+        ("way", "道路/方式"),
+        ("world", "世界"),
+        ("insight", "洞察"),
         ("intelligence", "智能"),
-        ("command center", "指挥中心"),
-        ("software development", "软件开发"),
-        ("multiple", "多"),
-        ("parallel", "并行"),
-        ("workflows", "工作流"),
-        ("long-running", "长时间运行"),
+        ("data", "数据"),
+        ("chip", "芯片"),
+        ("robotics", "机器人"),
+        ("infrastructure", "基础设施"),
+        
+        # 形容词/副词
+        ("valuable", "有价值的"),
+        ("private", "私有的"),
+        ("weekly", "每周的"),
+        ("most", "最"),
+        ("more", "更多"),
+        ("useful", "有用的"),
+        ("original", "原创的"),
+        ("directly", "直接"),
+        ("massive", "海量的"),
         ("reliable", "可靠的"),
-        ("insights", "洞察"),
-        ("reason", "推理"),
-        ("memory", "记忆"),
-        ("massive", "海量"),
+        ("long-running", "长时间运行的"),
+        ("parallel", "并行的"),
+        ("multiple", "多个"),
+        
+        # 介词/冠词/连词（小写匹配）
+        (" the ", " "),
+        (" and ", "和"),
+        (" in ", "在"),
+        (" a ", "一个"),
+        (" an ", "一个"),
+        (" to ", "来"),
+        (" of ", "的"),
+        (" for ", "用于"),
+        (" with ", "与"),
+        (" by ", "通过"),
+        (" from ", "来自"),
+        (" into ", "进入"),
+        (" on ", "在"),
+        (" at ", "在"),
     ]
     
-    # 翻译处理
     result = text
     for en, cn in sorted(translations, key=lambda x: len(x[0]), reverse=True):
+        # 不区分大小写替换，但保留原大小写用于判断
         result = re.sub(r'\b' + re.escape(en) + r'\b', cn, result, flags=re.IGNORECASE)
     
-    # 清理多余空格
+    # 清理多余空格和标点
     result = re.sub(r'\s+', ' ', result).strip()
+    result = re.sub(r' ([，。、；：？！])', r'\1', result)  # 移除标点前空格
     
-    return result
+    # 如果翻译后还是英文为主，标记为[原文]
+    chinese_count = len([c for c in result if '\u4e00' <= c <= '\u9fff'])
+    if chinese_count < len(result) * 0.3:
+        return f"[海外资讯] {text[:max_chars-10]}"
+    
+    return result[:max_chars]
 
 # 一手信源配置
 SOURCES = {
@@ -171,29 +248,29 @@ CATEGORY_META = {
 def fetch_rss(url, name):
     """抓取RSS"""
     try:
-        print(f"Fetching RSS: {name}")
+        print(f"Fetching: {name}")
         feed = feedparser.parse(url)
         entries = []
         for entry in feed.entries[:5]:
             summary = entry.get('summary', entry.get('description', ''))
             clean_summary = re.sub(r'<[^>]+>', '', summary)
             
-            # 强制翻译
-            title_cn = force_translate(entry.title)
-            summary_cn = force_translate(clean_summary[:200])
+            # 翻译处理
+            title_cn = smart_translate(entry.title, 100)
+            summary_cn = smart_translate(clean_summary, 150)
             
             entries.append({
                 "title": title_cn,
                 "link": entry.link,
                 "date": entry.get('published', ''),
-                "summary": summary_cn if summary_cn else title_cn,
+                "summary": summary_cn,
                 "source": name,
                 "content": f"<p>{summary_cn}</p><p><a href='{entry.link}' target='_blank'>查看原文：{name}</a></p>"
             })
-        print(f"  ✓ {name}: {len(entries)} articles")
+        print(f"  ✓ {len(entries)}条")
         return entries
     except Exception as e:
-        print(f"  ✗ Error {name}: {e}")
+        print(f"  ✗ Error: {e}")
         return []
 
 def fetch_hf_papers():
@@ -210,17 +287,17 @@ def fetch_hf_papers():
             
             if title:
                 entries.append({
-                    "title": f"[论文] {force_translate(title)}",
+                    "title": f"[论文] {smart_translate(title, 100)}",
                     "link": f"https://huggingface.co/papers/{paper_id}",
                     "date": p.get('publishedAt', ''),
-                    "summary": force_translate(summary[:200]) if summary else "最新AI研究论文",
+                    "summary": smart_translate(summary, 150) if summary else "最新AI研究论文",
                     "source": "Hugging Face",
-                    "content": f"<p>{force_translate(summary[:200])}</p><p><a href='https://huggingface.co/papers/{paper_id}' target='_blank'>查看论文</a></p>"
+                    "content": f"<p>{smart_translate(summary, 200)}</p><p><a href='https://huggingface.co/papers/{paper_id}' target='_blank'>查看论文</a></p>"
                 })
-        print(f"  ✓ Hugging Face: {len(entries)} papers")
+        print(f"  ✓ {len(entries)}条")
         return entries
     except Exception as e:
-        print(f"  ✗ Error HF: {e}")
+        print(f"  ✗ Error: {e}")
         return []
 
 def fetch_html_list(url, name, selector):
@@ -240,17 +317,17 @@ def fetch_html_list(url, name, selector):
             title = link.get_text(strip=True)
             if title and 10 < len(title) < 150:
                 entries.append({
-                    "title": force_translate(title),
+                    "title": smart_translate(title, 100),
                     "link": href,
                     "date": datetime.now().isoformat(),
                     "summary": f"{name}最新动态",
                     "source": name,
                     "content": f"<p>{name}发布更新</p><p><a href='{href}' target='_blank'>查看原文</a></p>"
                 })
-        print(f"  ✓ {name}: {len(entries)} articles")
+        print(f"  ✓ {len(entries)}条")
         return entries
     except Exception as e:
-        print(f"  ✗ Error {name}: {e}")
+        print(f"  ✗ Error: {e}")
         return []
 
 def estimate_read_time(text):
@@ -259,15 +336,12 @@ def estimate_read_time(text):
     return f"{minutes} 分钟"
 
 def build_content_database():
-    """构建数据库 - 强制多样性"""
+    """构建数据库"""
     print("\n" + "="*50)
-    print("开始抓取数据...")
-    print("="*50)
-    
     database = {"summaries": [[]], "categories": {}}
-    all_articles_by_source = {}  # 按来源分组
+    all_articles_by_source = {}
     
-    # 抓取所有数据
+    # 抓取数据
     for cat_key, sources in SOURCES.items():
         for source in sources:
             try:
@@ -280,19 +354,15 @@ def build_content_database():
                 else:
                     entries = []
                 
-                # 按来源存储，用于后续多样性选择
                 if entries:
                     all_articles_by_source[source['name']] = entries
-                
-                # 同时按分类存储
                 if cat_key not in database["categories"]:
                     database["categories"][cat_key] = []
                 database["categories"][cat_key].extend(entries)
-                
             except Exception as e:
-                print(f"Error processing {source['name']}: {e}")
+                print(f"Error: {e}")
     
-    # 处理分类数据 - 去重并限制数量
+    # 处理分类数据
     for cat_key in CATEGORY_META.keys():
         articles = database["categories"].get(cat_key, [])
         seen = set()
@@ -309,56 +379,26 @@ def build_content_database():
             "icon": CATEGORY_META[cat_key]["icon"],
             "articles": unique[:8]
         }
-        print(f"\n{cat_key}: {len(unique[:8])} articles")
+        print(f"{cat_key}: {len(unique[:8])}篇")
     
-    # 强制多样性：从不同来源选摘要，每个来源最多1条
-    print("\n" + "="*50)
-    print("选择摘要（强制多样性）...")
-    
+    # 选择摘要（强制多样性）
     summaries = []
-    sources_used = set()
+    priority = ["OpenAI Blog", "Anthropic News", "Google DeepMind", "Meta AI Blog", 
+                "Hugging Face", "NVIDIA Blog AI", "TechCrunch AI", "MIT Tech Review AI"]
     
-    # 优先级顺序
-    priority_order = [
-        "OpenAI Blog", "Anthropic News", "Google DeepMind", "Meta AI Blog",
-        "Hugging Face", "NVIDIA Blog AI", "TechCrunch AI", "MIT Tech Review AI"
-    ]
-    
-    # 第一轮：每个优先级来源取1条
-    for src_name in priority_order:
-        if src_name in all_articles_by_source and all_articles_by_source[src_name]:
-            article = all_articles_by_source[src_name][0]
-            if article['link'] not in [s['url'] for s in summaries]:
-                summaries.append({
-                    "text": article['summary'][:120] + "..." if len(article['summary']) > 120 else article['summary'],
-                    "source": article['source'],
-                    "url": article['link']
-                })
-                sources_used.add(src_name)
-                print(f"  ✓ 来自 {src_name}")
-            if len(summaries) >= 3:
-                break
-    
-    # 如果不够3条，从其他来源补充
-    if len(summaries) < 3:
-        for src_name, articles in all_articles_by_source.items():
-            if src_name not in sources_used and articles:
-                article = articles[0]
-                summaries.append({
-                    "text": article['summary'][:120] + "..." if len(article['summary']) > 120 else article['summary'],
-                    "source": article['source'],
-                    "url": article['link']
-                })
-                print(f"  ✓ 来自 {src_name} (补充)")
+    for src in priority:
+        if src in all_articles_by_source and all_articles_by_source[src]:
+            article = all_articles_by_source[src][0]
+            summaries.append({
+                "text": article['summary'][:120] + "..." if len(article['summary']) > 120 else article['summary'],
+                "source": article['source'],
+                "url": article['link']
+            })
+            print(f"摘要来源: {src}")
             if len(summaries) >= 3:
                 break
     
     database["summaries"] = [summaries[:3]]
-    
-    print(f"\n✓ 摘要选择完成: {len(summaries)}条，来自 {len(sources_used)}个不同来源")
-    for i, s in enumerate(summaries, 1):
-        print(f"  {i}. [{s['source']}] {s['text'][:40]}...")
-    
     return database
 
 def update_html_file():
@@ -370,13 +410,11 @@ def update_html_file():
         new_db = build_content_database()
         json_str = json.dumps(new_db, ensure_ascii=False, indent=8)
         
-        # 替换contentDatabase
         pattern = r'const contentDatabase = \{.*?\};'
         replacement = f'const contentDatabase = {json_str};'
         new_html = re.sub(pattern, replacement, html_content, flags=re.DOTALL)
         
         if new_html == html_content:
-            # 备选替换方案
             lines = html_content.split('\n')
             for i, line in enumerate(lines):
                 if 'const contentDatabase = {' in line:
@@ -396,15 +434,19 @@ def update_html_file():
             f.write(new_html)
         
         total = sum(len(c['articles']) for c in new_db['categories'].values())
-        print(f"\n✅ 更新成功！总文章数: {total}, 摘要数: {len(new_db['summaries'][0])}")
+        print(f"\n✅ 完成！共{total}篇文章，{len(new_db['summaries'][0])}条摘要")
         
     except Exception as e:
         print(f"Error: {e}")
         raise
 
 if __name__ == '__main__':
-    print("🤖 DATOU AI News - 强制中文翻译 + 来源多样性")
+    print("🤖 DATOU AI News - 智能翻译版")
     print("=" * 50)
     print(f"⏰ {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    if TRANSLATOR_AVAILABLE:
+        print("🌐 使用Google Translate API")
+    else:
+        print("📚 使用本地字典翻译")
     print("=" * 50)
     update_html_file()
