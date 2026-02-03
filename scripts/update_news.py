@@ -10,6 +10,108 @@ import feedparser
 import requests
 from bs4 import BeautifulSoup
 
+# 简单AI术语翻译字典（常见标题关键词映射）
+TRANSLATION_MAP = {
+    # 公司/产品
+    "openai": "OpenAI",
+    "anthropic": "Anthropic",
+    "claude": "Claude",
+    "gpt": "GPT",
+    "gemini": "Gemini",
+    "google": "谷歌",
+    "meta": "Meta",
+    "nvidia": "英伟达",
+    "microsoft": "微软",
+    "amazon": "亚马逊",
+    
+    # 技术术语
+    "artificial intelligence": "人工智能",
+    "machine learning": "机器学习",
+    "large language model": "大语言模型",
+    "llm": "大模型",
+    "agent": "智能体",
+    "ai agent": "AI智能体",
+    "coding": "编程",
+    "app": "应用",
+    "model": "模型",
+    "training": "训练",
+    "inference": "推理",
+    "chip": "芯片",
+    "gpu": "GPU",
+    "robotics": "机器人",
+    "funding": "融资",
+    "investment": "投资",
+    "partnership": "合作",
+    "announcing": "发布",
+    "introducing": "推出",
+    "new": "全新",
+    "update": "更新",
+    "release": "发布",
+    "launch": "上线",
+    "available": "可用",
+    "enterprise": "企业级",
+    "research": "研究",
+    "paper": "论文",
+    "benchmark": "基准测试",
+    "performance": "性能",
+    "multimodal": "多模态",
+    "reasoning": "推理能力",
+    "alignment": "对齐",
+    "safety": "安全",
+    "open source": "开源",
+}
+
+def translate_title(title):
+    """简单翻译标题（关键词替换+格式优化）"""
+    if not title:
+        return "无标题"
+    
+    # 如果已经是中文为主，直接返回
+    chinese_chars = len([c for c in title if '\u4e00' <= c <= '\u9fff'])
+    if chinese_chars > len(title) * 0.3:
+        return title
+    
+    # 英文标题翻译处理
+    translated = title.lower()
+    
+    # 按长度降序替换（避免短词覆盖长词）
+    for en, cn in sorted(TRANSLATION_MAP.items(), key=lambda x: len(x[0]), reverse=True):
+        translated = translated.replace(en.lower(), cn)
+    
+    # 首字母大写
+    translated = translated.capitalize()
+    
+    # 如果翻译后还是太像英文，添加前缀提示
+    if len([c for c in translated if '\u4e00' <= c <= '\u9fff']) < 3:
+        return f"[海外] {title}"
+    
+    return translated
+
+def translate_summary(text, source):
+    """翻译摘要，保留关键信息"""
+    if not text:
+        return f"来自{source}的最新动态..."
+    
+    # 清理HTML
+    clean = re.sub(r'<[^>]+>', '', text)
+    
+    # 如果已有中文，直接截断
+    chinese_chars = len([c for c in clean if '\u4e00' <= c <= '\u9fff'])
+    if chinese_chars > len(clean) * 0.2:
+        return clean[:120] + "..." if len(clean) > 120 else clean
+    
+    # 翻译关键术语
+    translated = clean.lower()
+    for en, cn in sorted(TRANSLATION_MAP.items(), key=lambda x: len(x[0]), reverse=True):
+        translated = translated.replace(en.lower(), cn)
+    
+    # 添加来源提示
+    result = translated.capitalize()
+    if len(result) > 150:
+        result = result[:150] + "..."
+    
+    return result
+
 # 一手信源配置（官方RSS源，去除所有港澳台站点）
 SOURCES = {
     "bigModel": [  # 大模型
@@ -87,15 +189,15 @@ def fetch_rss(url, name):
         for entry in feed.entries[:8]:
             published = entry.get('published', entry.get('updated', ''))
             summary = entry.get('summary', entry.get('description', ''))
-            clean_summary = re.sub(r'<[^>]+>', '', summary)[:280] + "..." if summary else "暂无摘要"
+            clean_summary = re.sub(r'<[^>]+>', '', summary)
             
             entries.append({
-                "title": entry.title,
+                "title": translate_title(entry.title),  # 翻译标题
                 "link": entry.link,
                 "date": published,
-                "summary": clean_summary,
+                "summary": translate_summary(clean_summary, name),  # 翻译摘要
                 "source": name,
-                "content": f"<p>{clean_summary}</p><p><a href='{entry.link}' target='_blank'>查看原文：{name}</a></p>"
+                "content": f"<p>{translate_summary(clean_summary, name)}</p><p><a href='{entry.link}' target='_blank'>查看原文：{name}</a></p>"
             })
         return entries
     except Exception as e:
@@ -113,16 +215,15 @@ def fetch_hf_papers():
             paper_id = p.get('id', '')
             title = p.get('title', '')
             summary = p.get('summary', '')
-            clean_summary = summary[:280] + "..." if summary else "最新AI研究论文"
             
             if title and len(title) > 10:
                 entries.append({
-                    "title": f"[论文] {title}",
+                    "title": f"[论文] {translate_title(title)}",
                     "link": f"https://huggingface.co/papers/{paper_id}",
                     "date": p.get('publishedAt', ''),
-                    "summary": clean_summary,
+                    "summary": translate_summary(summary, "Hugging Face"),
                     "source": "Hugging Face",
-                    "content": f"<p>论文摘要：{clean_summary}</p><p><a href='https://huggingface.co/papers/{paper_id}' target='_blank'>查看论文详情</a></p>"
+                    "content": f"<p>论文摘要：{translate_summary(summary, 'Hugging Face')}</p><p><a href='https://huggingface.co/papers/{paper_id}' target='_blank'>查看论文详情</a></p>"
                 })
         return entries
     except Exception as e:
@@ -146,7 +247,7 @@ def fetch_html_list(url, name, selector):
             title = link.get_text(strip=True)
             if title and 15 < len(title) < 200:
                 entries.append({
-                    "title": title,
+                    "title": translate_title(title),
                     "link": href,
                     "date": datetime.now().isoformat(),
                     "summary": f"{name}最新动态...",
@@ -166,7 +267,8 @@ def estimate_read_time(text):
 
 def build_content_database():
     """构建内容数据库"""
-    database = {"summaries": [[]], "categories": {}}
+    database = {"summaries": [], "categories": {}}  # 确保初始化为空字典
+    
     all_articles = []
     category_articles = {key: [] for key in CATEGORY_META.keys()}
     
@@ -189,48 +291,92 @@ def build_content_database():
                     
                     # 智能分类
                     title_lower = entry['title'].lower()
-                    if any(k in title_lower for k in ['funding', 'investment', '$', 'million', '融资', '估值', 'billion']):
+                    if any(k in title_lower for k in ['融资', '投资', 'funding', 'investment', '$', 'million', '估值', 'billion']):
                         final_cat = 'investment'
-                    elif any(k in title_lower for k in ['launch', 'release', 'product', 'update', '发布', '推出']):
+                    elif any(k in title_lower for k in ['发布', '推出', '上线', 'launch', 'release', 'product', 'update', 'available']):
                         if final_cat not in ['product', 'bigModel']:
                             final_cat = 'product'
                     
                     if final_cat in category_articles:
                         category_articles[final_cat].append(entry)
                     all_articles.append(entry)
+                    
             except Exception as e:
                 print(f"Error: {e}")
     
-    # 填充分类数据
+    # 填充分类数据 - 确保每个分类都有数据（即使为空数组）
     for cat_key, meta in CATEGORY_META.items():
         articles = category_articles.get(cat_key, [])
+        # 去重
         seen = set()
-        unique = [a for a in articles if not (a['link'] in seen or seen.add(a['link']))]
+        unique = []
+        for a in articles:
+            if a['link'] not in seen:
+                seen.add(a['link'])
+                unique.append(a)
         
         database["categories"][cat_key] = {
             "title": meta["title"],
             "desc": meta["desc"],
             "icon": meta["icon"],
-            "articles": unique[:8]
+            "articles": unique[:8]  # 最多8条
         }
         print(f"{cat_key}: {len(unique[:8])} articles")
     
-    # 生成今日核心摘要
-    priority_sources = ['OpenAI', 'Anthropic', 'Google DeepMind', 'Meta AI', 'xAI']
-    priority = [a for a in all_articles if any(s in a['source'] for s in priority_sources)]
-    summaries = priority[:3] if len(priority) >= 3 else priority + all_articles[:3-len(priority)]
+    # 生成今日核心摘要 - 确保多样性（不要全是OpenAI）
+    # 按来源分组，每个来源取1条，确保多样性
+    source_groups = {}
+    for a in all_articles:
+        src = a['source']
+        if src not in source_groups:
+            source_groups[src] = []
+        source_groups[src].append(a)
     
+    # 优先取不同来源的Top文章
+    summaries = []
+    priority_sources = ['OpenAI Blog', 'Anthropic News', 'Google DeepMind', 'Meta AI Blog', 'Hugging Face', 'NVIDIA Blog AI']
+    
+    for src in priority_sources:
+        if src in source_groups and source_groups[src]:
+            summaries.append(source_groups[src][0])
+        if len(summaries) >= 3:
+            break
+    
+    # 如果不够3条，补充其他来源
+    if len(summaries) < 3:
+        for src, articles in source_groups.items():
+            if articles and articles[0] not in summaries:
+                summaries.append(articles[0])
+            if len(summaries) >= 3:
+                break
+    
+    # 格式化摘要
     formatted = []
     for article in summaries[:3]:
         clean = re.sub(r'<[^>]+>', '', article.get('summary', ''))
-        clean = clean[:150] + "..." if len(clean) > 150 else clean
+        if len(clean) > 150:
+            clean = clean[:150] + "..."
+        
         formatted.append({
             "text": clean or article['title'],
             "source": article['source'],
             "url": article['link']
         })
     
-    database["summaries"] = [formatted]
+    database["summaries"] = [formatted]  # 保持数组的数组结构
+    
+    # 关键：确保categories不为空
+    if not database["categories"]:
+        print("WARNING: categories is empty!")
+        # 填充空结构避免报错
+        for cat_key, meta in CATEGORY_META.items():
+            database["categories"][cat_key] = {
+                "title": meta["title"],
+                "desc": meta["desc"],
+                "icon": meta["icon"],
+                "articles": []
+            }
+    
     return database
 
 def update_html_file():
@@ -240,6 +386,15 @@ def update_html_file():
             html_content = f.read()
         
         new_db = build_content_database()
+        
+        # 验证数据结构
+        print(f"\nDatabase structure check:")
+        print(f"- summaries count: {len(new_db['summaries'])}")
+        print(f"- summaries[0] count: {len(new_db['summaries'][0]) if new_db['summaries'] else 0}")
+        print(f"- categories count: {len(new_db['categories'])}")
+        for cat, data in new_db['categories'].items():
+            print(f"  - {cat}: {len(data.get('articles', []))} articles")
+        
         json_str = json.dumps(new_db, ensure_ascii=False, indent=8)
         
         # 替换contentDatabase
@@ -248,7 +403,7 @@ def update_html_file():
         new_html = re.sub(pattern, replacement, html_content, flags=re.DOTALL)
         
         if new_html == html_content:
-            # 备选方案
+            print("Warning: Using line-based replacement...")
             lines = html_content.split('\n')
             for i, line in enumerate(lines):
                 if 'const contentDatabase = {' in line:
@@ -268,14 +423,14 @@ def update_html_file():
             f.write(new_html)
         
         total = sum(len(c.get('articles', [])) for c in new_db['categories'].values())
-        print(f"\n✅ Success! Articles: {total}, Summaries: {len(new_db['summaries'][0])}")
+        print(f"\n✅ Success! Total articles: {total}, Summaries: {len(new_db['summaries'][0]) if new_db['summaries'] else 0}")
         
     except Exception as e:
         print(f"Error: {e}")
         raise
 
 if __name__ == '__main__':
-    print("🤖 DATOU AI News - Official Sources Only")
+    print("🤖 DATOU AI News - Official Sources + Chinese Translation")
     print("=" * 50)
     print(f"⏰ {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("Sources: OpenAI, Anthropic, DeepMind, Meta, NVIDIA, HF")
